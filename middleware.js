@@ -1,5 +1,3 @@
-import { NextResponse } from 'next/server';
-
 export const config = {
   matcher: '/:path*',
 };
@@ -16,12 +14,14 @@ export default function middleware(req) {
 
       const expected = process.env.SITE_PASSWORD;
       if (expected && password === expected) {
-        return NextResponse.next();
+        return new Response(null, {
+          headers: { 'x-middleware-next': '1' },
+        });
       }
     }
   }
 
-  return new NextResponse('Toegang geweigerd', {
+  return new Response('Toegang geweigerd', {
     status: 401,
     headers: {
       'WWW-Authenticate': 'Basic realm="Snack Bestelsysteem"',
