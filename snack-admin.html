@@ -302,63 +302,6 @@
 
     .btn-secondary:hover { border-color: var(--primary); color: var(--primary); }
 
-    /* ── SMTP Log paneel ── */
-    .smtp-log-panel {
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 10px 12px;
-      font-family: 'Consolas', 'Fira Mono', monospace;
-      font-size: .78rem;
-      line-height: 1.6;
-      max-height: 340px;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .smtp-log-empty { color: var(--text-muted); font-family: inherit; font-style: italic; }
-
-    .smtp-log-entry { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
-
-    .smtp-log-header {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 6px 10px;
-      background: var(--surface);
-      cursor: pointer;
-      user-select: none;
-      flex-wrap: wrap;
-    }
-
-    .smtp-log-header:hover { background: var(--surface2); }
-
-    .smtp-log-badge { font-size: .72rem; font-weight: 700; padding: 2px 7px; border-radius: 50px; white-space: nowrap; }
-    .smtp-log-badge.ok  { background: rgba(0,135,0,.12); color: var(--green); }
-    .smtp-log-badge.err { background: rgba(205,0,3,.12); color: var(--red); }
-
-    .smtp-log-time { color: var(--text-muted); font-size: .72rem; white-space: nowrap; }
-    .smtp-log-subject { color: var(--text); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .smtp-log-toggle { color: var(--text-muted); font-size: .7rem; margin-left: auto; flex-shrink: 0; }
-
-    .smtp-log-detail {
-      display: none;
-      background: var(--bg);
-      padding: 8px 10px;
-      border-top: 1px solid var(--border);
-      color: var(--text);
-      white-space: pre-wrap;
-      word-break: break-all;
-    }
-
-    .smtp-log-detail.open { display: block; }
-    .smtp-log-detail .log-section-title { color: var(--text-muted); font-size: .7rem; text-transform: uppercase; letter-spacing: .06em; margin-top: 8px; margin-bottom: 2px; display: block; }
-    .smtp-log-detail .log-value { color: var(--text); display: block; margin-bottom: 4px; }
-    .smtp-log-detail .log-value.ok  { color: var(--green); }
-    .smtp-log-detail .log-value.err { color: var(--red); }
-
     /* Inline small action buttons */
     .btn-close-date {
       background: rgba(205,0,3,.08);
@@ -963,84 +906,6 @@
     </div>
   </div>
 
-  <!-- ── Section 2b: SMTPeter e-mail API ── -->
-  <div class="admin-section" id="section-smtpeter">
-    <div class="section-header">
-      <h2>📧 E-mail Bevestiging (SMTPeter) <span class="section-lock-badge" id="smtpeter-lock-badge">🔒 Beveiligd</span></h2>
-    </div>
-    <div class="section-body" id="smtpeter-section-body">
-      <div style="padding:20px 22px;display:flex;flex-direction:column;gap:14px;max-width:560px;">
-        <p style="font-size:.88rem;color:var(--text-muted);line-height:1.6;">
-          Vul hier de SMTPeter API key en het afzenderadres in. Klanten ontvangen na hun bestelling automatisch een bevestigingsmail.
-          De API key vind je in je <a href="https://www.smtpeter.com/app/" target="_blank" style="color:var(--primary);">SMTPeter dashboard</a>.
-        </p>
-
-        <label style="display:flex;flex-direction:column;gap:5px;font-size:.8rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">
-          SMTPeter API Key
-          <div style="display:flex;gap:8px;align-items:center;">
-            <div style="position:relative;flex:1;">
-              <input type="password" class="login-input" id="smtpeter-key-input"
-                     placeholder="jouw-smtpeter-api-key"
-                     style="font-family:monospace;font-size:.85rem;padding-right:44px;"
-                     onkeydown="if(event.key==='Enter')saveSmtpeterSettings()" />
-              <button onclick="toggleSmtpeterKeyVisibility()" title="Toon/verberg"
-                      style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1rem;padding:4px;">👁</button>
-            </div>
-          </div>
-        </label>
-
-        <label style="display:flex;flex-direction:column;gap:5px;font-size:.8rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">
-          Afzender e-mailadres
-          <input type="email" class="login-input" id="smtpeter-from-input"
-                 placeholder="snacks@jouwbedrijf.nl"
-                 style="font-size:.9rem;"
-                 onkeydown="if(event.key==='Enter')saveSmtpeterSettings()" />
-        </label>
-
-        <label style="display:flex;flex-direction:column;gap:5px;font-size:.8rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">
-          Afzender naam <span style="font-weight:400;text-transform:none;letter-spacing:0;">(optioneel)</span>
-          <input type="text" class="login-input" id="smtpeter-fromname-input"
-                 placeholder="Snack Bestelsysteem"
-                 style="font-size:.9rem;"
-                 onkeydown="if(event.key==='Enter')saveSmtpeterSettings()" />
-        </label>
-
-        <div style="display:flex;gap:8px;flex-wrap:wrap;">
-          <button class="btn-primary" onclick="saveSmtpeterSettings()" style="white-space:nowrap;">💾 Opslaan</button>
-          <button class="btn-secondary" id="smtpeter-remove-btn" onclick="removeSmtpeterSettings()" style="display:none;white-space:nowrap;">🗑 Verwijderen</button>
-        </div>
-        <div id="smtpeter-status" style="font-size:.82rem;"></div>
-
-        <!-- Testmail blok -->
-        <div style="border-top:1px solid var(--border);padding-top:14px;display:flex;flex-direction:column;gap:10px;">
-          <p style="font-size:.82rem;color:var(--text-muted);">Stuur een testmail om te controleren of de instellingen correct zijn.</p>
-          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-            <input type="email" id="smtpeter-test-to" class="login-input"
-                   placeholder="ontvanger@email.nl"
-                   style="flex:1;min-width:200px;font-size:.9rem;"
-                   onkeydown="if(event.key==='Enter')testSmtpeterMail()" />
-            <button class="btn-secondary" id="smtpeter-test-btn" onclick="testSmtpeterMail()" style="white-space:nowrap;">📨 Verstuur testmail</button>
-          </div>
-          <div id="smtpeter-test-result" style="font-size:.82rem;min-height:1.2em;"></div>
-        </div>
-
-        <!-- Log paneel -->
-        <div style="border-top:1px solid var(--border);padding-top:14px;display:flex;flex-direction:column;gap:8px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
-            <span style="font-size:.8rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">📋 Verstuurlog</span>
-            <div style="display:flex;gap:6px;">
-              <button class="btn-secondary" onclick="exportSmtpLog()" id="smtpeter-log-export-btn" style="font-size:.75rem;padding:4px 10px;display:none;">⬇ Exporteer log</button>
-              <button class="btn-secondary" onclick="clearSmtpLog()" id="smtpeter-log-clear-btn" style="font-size:.75rem;padding:4px 10px;display:none;">🗑 Wis log</button>
-            </div>
-          </div>
-          <div id="smtpeter-log" class="smtp-log-panel">
-            <span class="smtp-log-empty">Nog geen verzendpogingen — log verschijnt hier na de eerste testmail.</span>
-          </div>
-        </div>
-
-      </div>
-    </div>
-  </div>
 
   <!-- ── Section 3: Producten & Prijzen ── -->
   <div class="admin-section" id="section-producten">
@@ -1201,14 +1066,12 @@ function setLockedSections(locked) {
   // Section bodies
   const qrBody = document.querySelector('#section-qr .section-body');
   const apikeyBody = document.getElementById('apikey-section-body');
-  const smtpeterBody = document.getElementById('smtpeter-section-body');
   const prodHeader = document.querySelector('#section-producten .section-header > div');
   const opslagRow = document.querySelector('.opslag-row');
   const prodTableWrap = document.querySelector('.producten-table-wrap');
 
   const qrBadge = document.getElementById('qr-lock-badge');
   const apikeyBadge = document.getElementById('apikey-lock-badge');
-  const smtpeterBadge = document.getElementById('smtpeter-lock-badge');
   const prodBadge = document.getElementById('producten-lock-badge');
   const logoutBtn = document.getElementById('logout-btn');
   const changePwBtn = document.getElementById('change-pw-btn');
@@ -1216,26 +1079,22 @@ function setLockedSections(locked) {
   if (locked) {
     if (qrBody) { qrBody.style.filter = 'blur(4px)'; qrBody.style.pointerEvents = 'none'; }
     if (apikeyBody) { apikeyBody.style.filter = 'blur(4px)'; apikeyBody.style.pointerEvents = 'none'; }
-    if (smtpeterBody) { smtpeterBody.style.filter = 'blur(4px)'; smtpeterBody.style.pointerEvents = 'none'; }
     if (prodHeader) { prodHeader.style.filter = 'blur(4px)'; prodHeader.style.pointerEvents = 'none'; }
     if (opslagRow) { opslagRow.style.filter = 'blur(4px)'; opslagRow.style.pointerEvents = 'none'; }
     if (prodTableWrap) { prodTableWrap.style.filter = 'blur(4px)'; prodTableWrap.style.pointerEvents = 'none'; }
     if (qrBadge) qrBadge.style.display = '';
     if (apikeyBadge) apikeyBadge.style.display = '';
-    if (smtpeterBadge) smtpeterBadge.style.display = '';
     if (prodBadge) prodBadge.style.display = '';
     if (logoutBtn) logoutBtn.style.display = 'none';
     if (changePwBtn) changePwBtn.style.display = 'none';
   } else {
     if (qrBody) { qrBody.style.filter = ''; qrBody.style.pointerEvents = ''; }
     if (apikeyBody) { apikeyBody.style.filter = ''; apikeyBody.style.pointerEvents = ''; }
-    if (smtpeterBody) { smtpeterBody.style.filter = ''; smtpeterBody.style.pointerEvents = ''; }
     if (prodHeader) { prodHeader.style.filter = ''; prodHeader.style.pointerEvents = ''; }
     if (opslagRow) { opslagRow.style.filter = ''; opslagRow.style.pointerEvents = ''; }
     if (prodTableWrap) { prodTableWrap.style.filter = ''; prodTableWrap.style.pointerEvents = ''; }
     if (qrBadge) qrBadge.style.display = 'none';
     if (apikeyBadge) apikeyBadge.style.display = 'none';
-    if (smtpeterBadge) smtpeterBadge.style.display = 'none';
     if (prodBadge) prodBadge.style.display = 'none';
     if (logoutBtn) logoutBtn.style.display = '';
     if (changePwBtn) changePwBtn.style.display = '';
@@ -2177,325 +2036,7 @@ function toggleAdminKeyVisibility() {
   inp.type = inp.type === 'password' ? 'text' : 'password';
 }
 
-// ── SMTPeter e-mail instellingen ───────────────────────────────────────────
 
-const SMTPETER_KEY_STORAGE  = 'snack_smtpeter_key';
-const SMTPETER_FROM_STORAGE = 'snack_smtpeter_from';
-const SMTPETER_FROMNAME_STORAGE = 'snack_smtpeter_fromname';
-
-function loadSmtpeterStatus() {
-  const key      = localStorage.getItem(SMTPETER_KEY_STORAGE) || '';
-  const from     = localStorage.getItem(SMTPETER_FROM_STORAGE) || '';
-  const fromName = localStorage.getItem(SMTPETER_FROMNAME_STORAGE) || '';
-  const statusEl  = document.getElementById('smtpeter-status');
-  const removeBtn = document.getElementById('smtpeter-remove-btn');
-  const keyInput  = document.getElementById('smtpeter-key-input');
-  const fromInput = document.getElementById('smtpeter-from-input');
-  const nameInput = document.getElementById('smtpeter-fromname-input');
-
-  if (from) fromInput.value = from;
-  if (fromName) nameInput.value = fromName;
-
-  if (key && from) {
-    statusEl.innerHTML = `<span style="color:var(--green);">✓ SMTPeter ingesteld</span> — mails worden verstuurd vanuit <strong>${escapeAdminHtml(from)}</strong>`;
-    if (removeBtn) removeBtn.style.display = '';
-    if (keyInput) keyInput.placeholder = '(vervang huidige key)';
-  } else {
-    statusEl.textContent = key ? 'API key ingesteld maar afzenderadres ontbreekt nog.' : 'Nog niet ingesteld — e-mailbevestigingen zijn uitgeschakeld.';
-    statusEl.style.color = 'var(--text-muted)';
-    if (removeBtn) removeBtn.style.display = 'none';
-  }
-}
-
-function saveSmtpeterSettings() {
-  const key      = (document.getElementById('smtpeter-key-input').value || '').trim();
-  const from     = (document.getElementById('smtpeter-from-input').value || '').trim();
-  const fromName = (document.getElementById('smtpeter-fromname-input').value || '').trim();
-
-  if (!from) {
-    document.getElementById('smtpeter-from-input').focus();
-    showToast('⚠ Vul een afzenderadres in', 'error');
-    return;
-  }
-  if (key) localStorage.setItem(SMTPETER_KEY_STORAGE, key);
-  localStorage.setItem(SMTPETER_FROM_STORAGE, from);
-  localStorage.setItem(SMTPETER_FROMNAME_STORAGE, fromName);
-  document.getElementById('smtpeter-key-input').value = '';
-  loadSmtpeterStatus();
-  showToast('✓ SMTPeter instellingen opgeslagen');
-}
-
-function removeSmtpeterSettings() {
-  if (!confirm('Weet je zeker dat je de SMTPeter instellingen wilt verwijderen? E-mailbevestigingen worden dan uitgeschakeld.')) return;
-  localStorage.removeItem(SMTPETER_KEY_STORAGE);
-  localStorage.removeItem(SMTPETER_FROM_STORAGE);
-  localStorage.removeItem(SMTPETER_FROMNAME_STORAGE);
-  document.getElementById('smtpeter-from-input').value = '';
-  document.getElementById('smtpeter-fromname-input').value = '';
-  loadSmtpeterStatus();
-  showToast('SMTPeter instellingen verwijderd');
-}
-
-function toggleSmtpeterKeyVisibility() {
-  const inp = document.getElementById('smtpeter-key-input');
-  inp.type = inp.type === 'password' ? 'text' : 'password';
-}
-
-// ── SMTP Log ────────────────────────────────────────────────────────────────
-
-const SMTP_LOG_STORAGE = 'snack_smtp_log';
-const SMTP_LOG_MAX     = 50; // maximaal aantal entries bewaren
-
-function getSmtpLog() {
-  try { return JSON.parse(localStorage.getItem(SMTP_LOG_STORAGE) || '[]'); } catch { return []; }
-}
-
-function saveSmtpLog(entries) {
-  localStorage.setItem(SMTP_LOG_STORAGE, JSON.stringify(entries.slice(-SMTP_LOG_MAX)));
-}
-
-function addSmtpLogEntry(entry) {
-  const log = getSmtpLog();
-  log.push(entry);
-  saveSmtpLog(log);
-  renderSmtpLog();
-}
-
-function renderSmtpLog() {
-  const panel     = document.getElementById('smtpeter-log');
-  const exportBtn = document.getElementById('smtpeter-log-export-btn');
-  const clearBtn  = document.getElementById('smtpeter-log-clear-btn');
-  const log       = getSmtpLog();
-
-  if (!panel) return;
-
-  if (!log.length) {
-    panel.innerHTML = '<span class="smtp-log-empty">Nog geen verzendpogingen — log verschijnt hier na de eerste testmail.</span>';
-    if (exportBtn) exportBtn.style.display = 'none';
-    if (clearBtn)  clearBtn.style.display  = 'none';
-    return;
-  }
-
-  if (exportBtn) exportBtn.style.display = '';
-  if (clearBtn)  clearBtn.style.display  = '';
-
-  // Nieuwste bovenaan
-  panel.innerHTML = [...log].reverse().map((e, idx) => {
-    const id      = `smtp-log-${idx}`;
-    const badgeCls = e.ok ? 'ok' : (e.type === 'network' ? 'err' : 'err');
-    const badgeTxt = e.ok ? '✓ OK' : '✗ FOUT';
-    const subject  = escapeAdminHtml(e.subject || '—');
-    const time     = escapeAdminHtml(e.timestamp || '');
-
-    // Detail regels opbouwen
-    let detail = '';
-
-    detail += `<span class="log-section-title">Tijdstip</span>`;
-    detail += `<span class="log-value">${escapeAdminHtml(e.timestamp)}</span>`;
-
-    detail += `<span class="log-section-title">Ontvanger</span>`;
-    detail += `<span class="log-value">${escapeAdminHtml(e.to)}</span>`;
-
-    detail += `<span class="log-section-title">Afzender</span>`;
-    detail += `<span class="log-value">${escapeAdminHtml(e.from)}</span>`;
-
-    detail += `<span class="log-section-title">Onderwerp</span>`;
-    detail += `<span class="log-value">${escapeAdminHtml(e.subject)}</span>`;
-
-    detail += `<span class="log-section-title">HTTP Status</span>`;
-    detail += `<span class="log-value ${e.ok ? 'ok' : 'err'}">${escapeAdminHtml(String(e.httpStatus || '—'))}</span>`;
-
-    if (e.responseRaw !== undefined) {
-      detail += `<span class="log-section-title">Ruwe response van SMTPeter</span>`;
-      detail += `<span class="log-value ${e.ok ? 'ok' : 'err'}">${escapeAdminHtml(e.responseRaw)}</span>`;
-    }
-
-    if (e.errorType) {
-      detail += `<span class="log-section-title">Fouttype</span>`;
-      detail += `<span class="log-value err">${escapeAdminHtml(e.errorType)}</span>`;
-    }
-
-    if (e.errorMessage) {
-      detail += `<span class="log-section-title">Foutmelding</span>`;
-      detail += `<span class="log-value err">${escapeAdminHtml(e.errorMessage)}</span>`;
-    }
-
-    if (e.requestBody) {
-      detail += `<span class="log-section-title">Verstuurde payload (JSON)</span>`;
-      detail += `<span class="log-value">${escapeAdminHtml(e.requestBody)}</span>`;
-    }
-
-    return `
-      <div class="smtp-log-entry" id="${id}">
-        <div class="smtp-log-header" onclick="toggleSmtpLogEntry('${id}')">
-          <span class="smtp-log-badge ${badgeCls}">${badgeTxt}</span>
-          <span class="smtp-log-time">${time}</span>
-          <span class="smtp-log-subject">${subject}</span>
-          <span class="smtp-log-toggle">▼ details</span>
-        </div>
-        <div class="smtp-log-detail" id="${id}-detail">${detail}</div>
-      </div>`;
-  }).join('');
-}
-
-function toggleSmtpLogEntry(id) {
-  const detail = document.getElementById(`${id}-detail`);
-  const toggle = document.querySelector(`#${id} .smtp-log-toggle`);
-  if (!detail) return;
-  const open = detail.classList.toggle('open');
-  if (toggle) toggle.textContent = open ? '▲ inklappen' : '▼ details';
-}
-
-function clearSmtpLog() {
-  if (!confirm('Weet je zeker dat je het volledige verzuurlog wilt wissen?')) return;
-  localStorage.removeItem(SMTP_LOG_STORAGE);
-  renderSmtpLog();
-  showToast('Log gewist');
-}
-
-function exportSmtpLog() {
-  const log  = getSmtpLog();
-  const lines = log.map(e => [
-    e.timestamp,
-    e.ok ? 'OK' : 'FOUT',
-    e.httpStatus || '',
-    e.to,
-    e.from,
-    e.subject,
-    e.errorType || '',
-    e.errorMessage || '',
-    e.responseRaw || '',
-  ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(','));
-
-  const csv  = ['Tijdstip,Status,HTTP,Ontvanger,Afzender,Onderwerp,Fouttype,Foutmelding,SMTPeter response', ...lines].join('\n');
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a');
-  a.href     = url;
-  a.download = `smtp-log-${new Date().toISOString().slice(0,10)}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-// ── Testmail versturen ──────────────────────────────────────────────────────
-
-async function testSmtpeterMail() {
-  const apiKey   = localStorage.getItem(SMTPETER_KEY_STORAGE) || '';
-  const fromAddr = localStorage.getItem(SMTPETER_FROM_STORAGE) || '';
-  const fromName = localStorage.getItem(SMTPETER_FROMNAME_STORAGE) || '';
-  const toAddr   = (document.getElementById('smtpeter-test-to').value || '').trim();
-
-  const resultEl = document.getElementById('smtpeter-test-result');
-  const btn      = document.getElementById('smtpeter-test-btn');
-
-  // Validatie (wordt niet gelogd — nog geen API aanroep)
-  if (!apiKey) {
-    resultEl.innerHTML = '<span style="color:var(--red);">❌ Geen API key ingesteld. Sla eerst de instellingen op.</span>';
-    return;
-  }
-  if (!fromAddr) {
-    resultEl.innerHTML = '<span style="color:var(--red);">❌ Geen afzenderadres ingesteld. Sla eerst de instellingen op.</span>';
-    return;
-  }
-  if (!toAddr) {
-    document.getElementById('smtpeter-test-to').focus();
-    resultEl.innerHTML = '<span style="color:var(--text-muted);">Vul een ontvanger e-mailadres in.</span>';
-    return;
-  }
-
-  btn.disabled = true;
-  btn.textContent = '⏳ Versturen…';
-  resultEl.innerHTML = '<span style="color:var(--text-muted);">Verbinding maken met SMTPeter…</span>';
-
-  const fromField = fromName ? `${fromName} <${fromAddr}>` : fromAddr;
-  const now       = new Date().toLocaleString('nl-NL', { dateStyle: 'short', timeStyle: 'medium' });
-  const subject   = '🧪 Testmail — Snack Bestelsysteem';
-
-  const textBody = `Dit is een testmail vanuit het Snack Bestelsysteem.\n\nVerstuurd op: ${now}\nVan: ${fromField}\nNaar: ${toAddr}\n\nAls je deze mail ontvangen hebt, werken de SMTPeter instellingen correct!`;
-  const htmlBody = `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;color:#222;">
-<div style="background:#e85d04;padding:20px 24px;border-radius:10px 10px 0 0;">
-  <h2 style="color:#fff;margin:0;">&#x1F9EA; Testmail Snack Bestelsysteem</h2>
-</div>
-<div style="background:#f9f9f9;padding:20px 24px;border-radius:0 0 10px 10px;border:1px solid #eee;">
-  <p>&#x2705; Als je deze mail ontvangt, werken de SMTPeter instellingen correct!</p>
-  <table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:.9em;">
-    <tr><td style="padding:6px 0;color:#888;">Verstuurd op</td><td style="padding:6px 0;"><strong>${now}</strong></td></tr>
-    <tr><td style="padding:6px 0;color:#888;">Van</td><td style="padding:6px 0;"><strong>${escapeAdminHtml(fromField)}</strong></td></tr>
-    <tr><td style="padding:6px 0;color:#888;">Naar</td><td style="padding:6px 0;"><strong>${escapeAdminHtml(toAddr)}</strong></td></tr>
-  </table>
-  <p style="color:#888;font-size:.85em;">Dit bericht is automatisch gegenereerd door het Snack Bestelsysteem.</p>
-</div>
-</body></html>`;
-
-  const payload = {
-    recipient: toAddr,
-    from:      fromField,
-    to:        toAddr,
-    subject,
-    text:      textBody,
-    html:      htmlBody,
-  };
-
-  // Basisentry voor log
-  const logEntry = {
-    timestamp:   new Date().toLocaleString('nl-NL', { dateStyle: 'short', timeStyle: 'medium' }),
-    to:          toAddr,
-    from:        fromField,
-    subject,
-    requestBody: JSON.stringify(payload, null, 2),
-    ok:          false,
-  };
-
-  try {
-    const resp = await fetch(
-      `https://www.smtpeter.com/v1/send?access_token=${encodeURIComponent(apiKey)}`,
-      {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify(payload),
-      }
-    );
-
-    logEntry.httpStatus = resp.status;
-
-    // Lees de ruwe response altijd uit
-    const rawText = await resp.text();
-    logEntry.responseRaw = rawText;
-
-    // Probeer te parsen
-    let parsed = null;
-    try { parsed = JSON.parse(rawText); } catch (_) { /* ruwe tekst al opgeslagen */ }
-
-    if (resp.ok) {
-      logEntry.ok = true;
-      resultEl.innerHTML = `<span style="color:var(--green);">✅ Testmail verstuurd naar <strong>${escapeAdminHtml(toAddr)}</strong> — controleer je inbox (en spam).</span>`;
-    } else {
-      // Extraheer zo specifiek mogelijk de foutmelding
-      let errMsg = `HTTP ${resp.status} ${resp.statusText}`;
-      if (parsed) {
-        if (parsed.error)              errMsg = parsed.error;
-        else if (parsed.message)       errMsg = parsed.message;
-        else if (parsed.description)   errMsg = parsed.description;
-        else                           errMsg = JSON.stringify(parsed, null, 2);
-      } else if (rawText) {
-        errMsg = rawText;
-      }
-      logEntry.errorType    = `HTTP ${resp.status}`;
-      logEntry.errorMessage = errMsg;
-      resultEl.innerHTML    = `<span style="color:var(--red);">❌ <strong>HTTP ${resp.status}</strong> — ${escapeAdminHtml(errMsg)}</span>`;
-    }
-
-  } catch (e) {
-    logEntry.errorType    = 'Netwerkfout';
-    logEntry.errorMessage = e.message;
-    logEntry.responseRaw  = e.stack || e.message;
-    resultEl.innerHTML    = `<span style="color:var(--red);">❌ Netwerkfout: <code style="font-size:.85em;">${escapeAdminHtml(e.message)}</code></span>`;
-  } finally {
-    btn.disabled    = false;
-    btn.textContent = '📨 Verstuur testmail';
-    addSmtpLogEntry(logEntry);
-  }
-}
 
 function escapeAdminHtml(str) {
   return String(str || '')
@@ -2540,8 +2081,6 @@ updateOpslag();
 renderProducten();
 renderOrders();
 loadAdminApiKeyStatus();
-loadSmtpeterStatus();
-renderSmtpLog();
 </script>
 </body>
 </html>
