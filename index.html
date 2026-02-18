@@ -18,64 +18,15 @@
       align-items: center;
       justify-content: center;
     }
-
-    /* ── Login gate ── */
-    #gate {
-      text-align: center;
-      padding: 40px 24px;
-      max-width: 400px;
-      width: 100%;
-      background: #fff;
-      border-radius: 8px;
-      box-shadow: 0 4px 24px rgba(29,29,95,.12);
-    }
-    #gate .logo { font-size: 2.8rem; margin-bottom: 12px; }
-    #gate h1 { font-size: 1.5rem; font-weight: 700; color: #1D1D5F; margin-bottom: 6px; }
-    #gate p { color: #737373; font-size: .9rem; margin-bottom: 28px; }
-    #gate input {
-      width: 100%;
-      padding: 12px 14px;
-      border: 1px solid #E5E5E5;
-      border-radius: 4px;
-      font-size: 1rem;
-      font-family: inherit;
-      margin-bottom: 12px;
-      outline: none;
-      transition: border-color .15s;
-    }
-    #gate input:focus { border-color: #1D1D5F; }
-    #gate button {
-      width: 100%;
-      height: 44px;
-      background: #1D1D5F;
-      color: #fff;
-      border: none;
-      border-radius: 4px;
-      font-size: 1rem;
-      font-weight: 600;
-      font-family: inherit;
-      cursor: pointer;
-      transition: background .15s;
-    }
-    #gate button:hover { background: #151545; }
-    #gate .error {
-      color: #CD0003;
-      font-size: .85rem;
-      margin-top: 10px;
-      min-height: 20px;
-    }
-
-    /* ── Main menu (shown after login) ── */
-    #menu {
-      display: none;
+    .container {
       text-align: center;
       padding: 40px 24px;
       max-width: 480px;
       width: 100%;
     }
-    #menu .logo { font-size: 3rem; margin-bottom: 12px; }
-    #menu h1 { font-size: 1.6rem; font-weight: 700; color: #1D1D5F; margin-bottom: 6px; }
-    #menu p { color: #737373; margin-bottom: 32px; font-size: .9rem; }
+    .logo { font-size: 3rem; margin-bottom: 12px; }
+    h1 { font-size: 1.6rem; font-weight: 700; color: #1D1D5F; margin-bottom: 6px; }
+    p { color: #737373; margin-bottom: 32px; font-size: .9rem; }
     .links { display: flex; flex-direction: column; gap: 14px; }
     .btn {
       display: block;
@@ -92,35 +43,10 @@
     .btn-order:hover { background: #AC2700; }
     .btn-admin { background: #1D1D5F; color: #fff; }
     .btn-admin:hover { background: #151545; }
-    .logout {
-      margin-top: 24px;
-      background: none;
-      border: none;
-      color: #737373;
-      font-size: .85rem;
-      cursor: pointer;
-      font-family: inherit;
-      text-decoration: underline;
-    }
-    .logout:hover { color: #191919; }
   </style>
 </head>
 <body>
-
-  <!-- Password gate -->
-  <div id="gate">
-    <div class="logo">🍟</div>
-    <h1>AZERTY Snacks</h1>
-    <p>Voer het wachtwoord in om verder te gaan</p>
-    <input type="password" id="pw-input" placeholder="Wachtwoord"
-           autocomplete="current-password"
-           onkeydown="if(event.key==='Enter') checkPassword()" />
-    <button onclick="checkPassword()">Inloggen</button>
-    <div class="error" id="pw-error"></div>
-  </div>
-
-  <!-- Main menu (after login) -->
-  <div id="menu">
+  <div class="container">
     <div class="logo">🍟</div>
     <h1>AZERTY Snacks</h1>
     <p>Bestel je snacks of beheer het systeem</p>
@@ -128,41 +54,6 @@
       <a href="/snack-order" class="btn btn-order">🛒 Snacks bestellen</a>
       <a href="/snack-admin" class="btn btn-admin">⚙️ Beheer</a>
     </div>
-    <button class="logout" onclick="logout()">Uitloggen</button>
   </div>
-
-  <script>
-    const SESSION_KEY = 'snack_auth';
-    const PASSWORD    = 'azerty';
-
-    function checkPassword() {
-      const val = document.getElementById('pw-input').value;
-      if (val === PASSWORD) {
-        sessionStorage.setItem(SESSION_KEY, '1');
-        showMenu();
-      } else {
-        document.getElementById('pw-error').textContent = 'Onjuist wachtwoord, probeer opnieuw.';
-        document.getElementById('pw-input').value = '';
-        document.getElementById('pw-input').focus();
-      }
-    }
-
-    function showMenu() {
-      document.getElementById('gate').style.display = 'none';
-      document.getElementById('menu').style.display = 'block';
-    }
-
-    function logout() {
-      sessionStorage.removeItem(SESSION_KEY);
-      document.getElementById('menu').style.display = 'none';
-      document.getElementById('gate').style.display = 'block';
-      document.getElementById('pw-input').value = '';
-      document.getElementById('pw-error').textContent = '';
-    }
-
-    // Auto-show menu if already authenticated this session
-    if (sessionStorage.getItem(SESSION_KEY) === '1') showMenu();
-    else document.getElementById('pw-input').focus();
-  </script>
 </body>
 </html>
