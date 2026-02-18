@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Snack Bestelsysteem</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #1a1a2e;
+      color: #eaeaea;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .container {
+      text-align: center;
+      padding: 40px 24px;
+      max-width: 480px;
+      width: 100%;
+    }
+    .logo { font-size: 3.5rem; margin-bottom: 16px; }
+    h1 { font-size: 1.8rem; font-weight: 800; margin-bottom: 8px; }
+    p { color: #9aa3b2; margin-bottom: 36px; font-size: .95rem; }
+    .links { display: flex; flex-direction: column; gap: 14px; }
+    .btn {
+      display: block;
+      padding: 16px 24px;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 700;
+      text-decoration: none;
+      transition: transform .15s, box-shadow .15s;
+    }
+    .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+    .btn-order {
+      background: linear-gradient(135deg, #e85d04, #ff8c00);
+      color: #fff;
+    }
+    .btn-admin {
+      background: #1e2a45;
+      border: 1px solid rgba(255,255,255,0.1);
+      color: #9aa3b2;
+    }
+    .btn-admin:hover { color: #eaeaea; border-color: rgba(255,255,255,0.2); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">🍟</div>
+    <h1>Snack Bestelsysteem</h1>
+    <p>Bestel je snacks of beheer het systeem</p>
+    <div class="links">
+      <a href="snack-order.html" class="btn btn-order">🛒 Snacks bestellen</a>
+      <a href="snack-admin.html" class="btn btn-admin">⚙️ Beheer</a>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,2709 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SnackBestel — Beheer</title>
+  <style>
+    :root {
+      --primary: #e85d04;
+      --primary-dark: #c44d04;
+      --bg: #1a1a2e;
+      --surface: #16213e;
+      --surface2: #0f3460;
+      --card: #1e2a45;
+      --text: #eaeaea;
+      --text-muted: #9aa3b2;
+      --accent: #f5a623;
+      --green: #2ecc71;
+      --red: #e74c3c;
+      --border: rgba(255,255,255,0.08);
+      --radius: 12px;
+    }
+
+    html.light {
+      --bg: #f0f2f5;
+      --surface: #ffffff;
+      --surface2: #e2e8f0;
+      --card: #ffffff;
+      --text: #1a202c;
+      --text-muted: #64748b;
+      --border: rgba(0,0,0,0.10);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      background: linear-gradient(135deg, var(--primary) 0%, #ff8c00 100%);
+      padding: 20px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    header .logo {
+      font-size: 1.6rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+
+    header .logo span { color: #fff3; }
+    header .logo small { font-size: .65em; opacity: .6; font-weight: 400; margin-left: 6px; }
+
+    .back-link {
+      color: rgba(255,255,255,0.85);
+      text-decoration: none;
+      font-size: .88rem;
+      font-weight: 600;
+      border: 1px solid rgba(255,255,255,0.35);
+      padding: 8px 16px;
+      border-radius: 20px;
+      transition: all .2s;
+    }
+
+    .back-link:hover { color: #fff; border-color: #fff; background: rgba(255,255,255,0.1); }
+
+    .header-actions { display: flex; align-items: center; gap: 10px; }
+
+    /* Theme toggle */
+    .theme-toggle {
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.3);
+      color: #fff;
+      border-radius: 50%;
+      width: 36px;
+      height: 36px;
+      font-size: 1rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all .2s;
+      flex-shrink: 0;
+    }
+
+    .theme-toggle:hover { background: rgba(255,255,255,0.3); }
+
+    /* ── Container ── */
+    .admin-container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 28px 16px 60px;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+    }
+
+    /* ── Page title ── */
+    .page-title {
+      font-size: 1.5rem;
+      font-weight: 800;
+      margin-bottom: -8px;
+    }
+
+    .page-subtitle {
+      color: var(--text-muted);
+      font-size: .9rem;
+      margin-top: 6px;
+    }
+
+    /* ── Section card ── */
+    .admin-section {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 22px;
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .section-header h2 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-body { padding: 22px; }
+
+    /* ── QR Manager ── */
+    .qr-manager {
+      display: flex;
+      gap: 24px;
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+
+    .qr-preview {
+      flex-shrink: 0;
+    }
+
+    .qr-preview img {
+      width: 180px;
+      height: 180px;
+      object-fit: contain;
+      border-radius: 10px;
+      background: #fff;
+      padding: 8px;
+      display: block;
+    }
+
+    .qr-preview .no-qr {
+      width: 180px;
+      height: 180px;
+      border-radius: 10px;
+      border: 2px dashed var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 8px;
+      color: var(--text-muted);
+      font-size: .85rem;
+    }
+
+    .qr-preview .no-qr span { font-size: 2rem; }
+
+    .qr-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      flex: 1;
+      min-width: 200px;
+    }
+
+    .qr-controls p {
+      font-size: .82rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    .qr-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: .85rem;
+      font-weight: 600;
+    }
+
+    .qr-status.active { color: var(--green); }
+    .qr-status.inactive { color: var(--text-muted); }
+
+    /* ── Buttons ── */
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 10px 20px;
+      font-size: .9rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all .2s;
+    }
+
+    .btn-primary:hover { background: var(--primary-dark); }
+
+    .btn-danger {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: transparent;
+      color: var(--red);
+      border: 1px solid var(--red);
+      border-radius: 10px;
+      padding: 10px 20px;
+      font-size: .9rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all .2s;
+    }
+
+    .btn-danger:hover { background: var(--red); color: #fff; }
+
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--surface2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 7px 14px;
+      font-size: .85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .2s;
+    }
+
+    .btn-secondary:hover { border-color: var(--primary); color: var(--primary); }
+
+    /* ── SMTP Log paneel ── */
+    .smtp-log-panel {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-family: 'Consolas', 'Fira Mono', monospace;
+      font-size: .78rem;
+      line-height: 1.6;
+      max-height: 340px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .smtp-log-empty {
+      color: var(--text-muted);
+      font-family: inherit;
+      font-style: italic;
+    }
+
+    .smtp-log-entry {
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .smtp-log-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      background: var(--surface);
+      cursor: pointer;
+      user-select: none;
+      flex-wrap: wrap;
+    }
+
+    .smtp-log-header:hover { background: var(--surface2); }
+
+    .smtp-log-badge {
+      font-size: .72rem;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 50px;
+      white-space: nowrap;
+    }
+    .smtp-log-badge.ok   { background: rgba(46,204,113,.18); color: var(--green); }
+    .smtp-log-badge.err  { background: rgba(231,76,60,.18);  color: var(--red); }
+    .smtp-log-badge.warn { background: rgba(245,166,35,.18); color: var(--accent); }
+
+    .smtp-log-time {
+      color: var(--text-muted);
+      font-size: .72rem;
+      white-space: nowrap;
+    }
+
+    .smtp-log-subject {
+      color: var(--text);
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .smtp-log-toggle {
+      color: var(--text-muted);
+      font-size: .7rem;
+      margin-left: auto;
+      flex-shrink: 0;
+    }
+
+    .smtp-log-detail {
+      display: none;
+      background: var(--bg);
+      padding: 8px 10px;
+      border-top: 1px solid var(--border);
+      color: var(--text);
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    .smtp-log-detail.open { display: block; }
+
+    .smtp-log-detail .log-section-title {
+      color: var(--text-muted);
+      font-size: .7rem;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      margin-top: 8px;
+      margin-bottom: 2px;
+      display: block;
+    }
+
+    .smtp-log-detail .log-value {
+      color: var(--text);
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .smtp-log-detail .log-value.ok  { color: var(--green); }
+    .smtp-log-detail .log-value.err { color: var(--red); }
+
+    /* Inline small action buttons */
+    .btn-close-date {
+      background: rgba(231,76,60,.15);
+      color: var(--red);
+      border: 1px solid rgba(231,76,60,.4);
+      border-radius: 7px;
+      padding: 5px 12px;
+      font-size: .8rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all .2s;
+      white-space: nowrap;
+    }
+
+    .btn-close-date:hover { background: var(--red); color: #fff; }
+
+    .btn-reopen-date {
+      background: rgba(46,204,113,.15);
+      color: var(--green);
+      border: 1px solid rgba(46,204,113,.4);
+      border-radius: 7px;
+      padding: 5px 12px;
+      font-size: .8rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all .2s;
+      white-space: nowrap;
+    }
+
+    .btn-reopen-date:hover { background: var(--green); color: #000; }
+
+    .btn-delete-date {
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 5px 12px;
+      font-size: .8rem;
+      cursor: pointer;
+      transition: all .2s;
+      white-space: nowrap;
+    }
+
+    .btn-delete-date:hover { color: var(--red); border-color: var(--red); }
+
+    /* ── Status badges ── */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 10px;
+      border-radius: 50px;
+      font-size: .75rem;
+      font-weight: 700;
+    }
+
+    .badge-open {
+      background: rgba(46,204,113,.15);
+      color: var(--green);
+      border: 1px solid rgba(46,204,113,.35);
+    }
+
+    .badge-closed {
+      background: rgba(231,76,60,.15);
+      color: var(--red);
+      border: 1px solid rgba(231,76,60,.35);
+    }
+
+    /* ── Date groups ── */
+    .date-group {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 18px;
+      overflow: hidden;
+    }
+
+    .date-group:last-child { margin-bottom: 0; }
+
+    .date-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 18px;
+      background: var(--surface2);
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .date-header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .date-label {
+      font-size: 1rem;
+      font-weight: 800;
+    }
+
+    .date-meta {
+      color: var(--text-muted);
+      font-size: .82rem;
+    }
+
+    .date-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    /* Aggregate bar */
+    .aggregate-bar {
+      padding: 10px 18px;
+      background: rgba(245,166,35,.07);
+      border-bottom: 1px solid var(--border);
+      font-size: .83rem;
+      line-height: 1.8;
+      color: var(--text-muted);
+    }
+
+    .aggregate-bar strong { color: var(--accent); }
+
+    /* ── Doorbestelblok ── */
+    .doorbestel-block {
+      border-top: 2px solid var(--border);
+      padding: 18px;
+      background: rgba(0,0,0,.15);
+    }
+
+    .doorbestel-title {
+      font-size: .78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--accent);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .doorbestel-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .88rem;
+    }
+
+    .doorbestel-table th {
+      text-align: left;
+      padding: 7px 12px;
+      font-size: .7rem;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .doorbestel-table th:last-child,
+    .doorbestel-table td:last-child { text-align: right; }
+
+    .doorbestel-table td {
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+
+    .doorbestel-table tbody tr:last-child td { border-bottom: none; }
+
+    .doorbestel-table .qty-cell {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: var(--green);
+      white-space: nowrap;
+      width: 56px;
+    }
+
+    .doorbestel-table .price-cell {
+      color: var(--accent);
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .doorbestel-table .subtotal-cell {
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
+    .doorbestel-totaal-row td {
+      border-top: 2px solid var(--border) !important;
+      border-bottom: none !important;
+      padding-top: 12px !important;
+      font-weight: 800;
+    }
+
+    .print-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 4px 12px;
+      font-size: .78rem;
+      cursor: pointer;
+      transition: all .2s;
+    }
+
+    .print-btn:hover { color: var(--text); border-color: var(--text-muted); }
+
+    @media print {
+      header, .admin-container > div:first-child,
+      .admin-section:nth-child(1),
+      .section-header, .stats-row,
+      .date-actions, .btn-close-date, .btn-reopen-date, .btn-delete-date,
+      .print-btn, .aggregate-bar,
+      .table-wrap, .back-link { display: none !important; }
+      body { background: #fff; color: #000; }
+      .doorbestel-block { border: none; padding: 0; background: none; }
+      .doorbestel-title { color: #000; border-bottom: 2px solid #000; padding-bottom: 6px; }
+      .doorbestel-table { color: #000; }
+      .doorbestel-table th { color: #555; border-bottom: 1px solid #ccc; }
+      .doorbestel-table td { border-bottom: 1px solid #eee; }
+      .doorbestel-table .qty-cell { color: #000; }
+      .doorbestel-table .price-cell { color: #000; }
+      .doorbestel-totaal-row td { border-top: 2px solid #000 !important; }
+      .date-group { border: 1px solid #ccc; break-inside: avoid; }
+      .date-header { background: #f5f5f5 !important; }
+      .date-label, .date-meta { color: #000 !important; }
+    }
+
+    /* ── Orders table ── */
+    .table-wrap { overflow-x: auto; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .86rem;
+    }
+
+    thead th {
+      text-align: left;
+      padding: 10px 16px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-size: .72rem;
+      letter-spacing: .06em;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+
+    tbody td {
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+
+    tbody tr:last-child td { border-bottom: none; }
+
+    tbody tr:hover td { background: var(--surface2); }
+
+    .td-items {
+      color: var(--text-muted);
+      line-height: 1.7;
+      min-width: 180px;
+    }
+
+    .td-total {
+      font-weight: 700;
+      color: var(--accent);
+      white-space: nowrap;
+    }
+
+    .td-time {
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
+    /* Grand total row */
+    .tr-grand-total td {
+      border-top: 2px solid var(--border);
+      border-bottom: none;
+      padding-top: 12px;
+    }
+
+    /* ── Empty state ── */
+    .empty-state {
+      text-align: center;
+      color: var(--text-muted);
+      padding: 56px 20px;
+    }
+
+    .empty-state .empty-icon { font-size: 3rem; margin-bottom: 12px; }
+    .empty-state p { font-size: .95rem; }
+
+    /* ── Stats row ── */
+    .stats-row {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      padding: 16px 22px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(0,0,0,.1);
+    }
+
+    .stat-card {
+      flex: 1;
+      min-width: 120px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 18px;
+    }
+
+    .stat-label {
+      font-size: .75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      margin-bottom: 4px;
+    }
+
+    .stat-value {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--accent);
+    }
+
+    .stat-value.green { color: var(--green); }
+
+    /* ── Tabs ── */
+    .tab-bar {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      padding: 0 22px;
+      gap: 4px;
+      background: rgba(0,0,0,.1);
+    }
+
+    .tab-btn {
+      background: none;
+      border: none;
+      border-bottom: 3px solid transparent;
+      color: var(--text-muted);
+      font-size: .88rem;
+      font-weight: 600;
+      padding: 12px 16px;
+      cursor: pointer;
+      transition: all .15s;
+      white-space: nowrap;
+      margin-bottom: -1px;
+    }
+
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* Per-naam overzicht */
+    .name-date-group {
+      margin-bottom: 22px;
+    }
+
+    .name-date-group:last-child { margin-bottom: 0; }
+
+    .name-date-label {
+      font-size: .78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      color: var(--text-muted);
+      padding: 10px 0 6px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 0;
+    }
+
+    .name-card {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .name-card:last-child { border-bottom: none; }
+
+    .name-card-left { min-width: 0; flex: 1; }
+
+    .name-card-name {
+      font-weight: 700;
+      font-size: .92rem;
+    }
+
+    .name-card-dept {
+      font-size: .78rem;
+      color: var(--text-muted);
+      margin-top: 1px;
+    }
+
+    .name-card-items {
+      font-size: .82rem;
+      color: var(--text-muted);
+      line-height: 1.7;
+      margin-top: 4px;
+    }
+
+    .name-card-right {
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .name-card-total {
+      font-weight: 700;
+      color: var(--accent);
+      font-size: .92rem;
+    }
+
+    .name-card-time {
+      font-size: .75rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* ── Producten sectie ── */
+    .opslag-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      padding: 18px 22px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(0,0,0,.1);
+    }
+
+    .opslag-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .opslag-label {
+      font-size: .85rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
+    .opslag-input-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .opslag-input {
+      width: 72px;
+      background: transparent;
+      border: none;
+      color: var(--text);
+      font-size: 1rem;
+      font-weight: 700;
+      padding: 8px 10px;
+      outline: none;
+      text-align: right;
+    }
+
+    .opslag-input::-webkit-inner-spin-button { opacity: 0; }
+
+    .opslag-mode-btn {
+      padding: 8px 10px;
+      background: var(--surface2);
+      border: none;
+      border-left: 1px solid var(--border);
+      color: var(--accent);
+      font-size: .9rem;
+      font-weight: 800;
+      cursor: pointer;
+      min-width: 34px;
+      transition: background .15s;
+      user-select: none;
+    }
+
+    .opslag-mode-btn:hover { background: var(--primary); color: #fff; }
+
+    .opslag-badge {
+      font-size: .78rem;
+      padding: 3px 10px;
+      border-radius: 50px;
+      font-weight: 700;
+      background: rgba(245,166,35,.15);
+      color: var(--accent);
+      border: 1px solid rgba(245,166,35,.3);
+    }
+
+    .producten-table-wrap { overflow-x: auto; max-height: 480px; overflow-y: auto; }
+
+    .producten-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .86rem;
+    }
+
+    .producten-table thead { position: sticky; top: 0; z-index: 2; }
+
+    .producten-table th {
+      text-align: left;
+      padding: 10px 14px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-size: .7rem;
+      letter-spacing: .06em;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface2);
+      white-space: nowrap;
+    }
+
+    .producten-table td {
+      padding: 8px 14px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+
+    .producten-table tbody tr:hover td { background: var(--surface2); }
+
+    .cat-badge {
+      display: inline-block;
+      font-size: .72rem;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: var(--surface2);
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
+    .price-orig { color: var(--text-muted); font-size: .8rem; }
+    .price-final { color: var(--accent); font-weight: 700; }
+    .price-markup { color: var(--green); font-size: .78rem; }
+
+    /* ── Login overlay ── */
+    .login-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(10,12,20,.92);
+      backdrop-filter: blur(6px);
+      z-index: 500;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .login-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 40px 36px;
+      max-width: 380px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,.6);
+    }
+
+    .login-icon { font-size: 2.6rem; margin-bottom: 12px; }
+
+    .login-card h2 {
+      font-size: 1.2rem;
+      font-weight: 800;
+      margin-bottom: 6px;
+    }
+
+    .login-card p {
+      font-size: .85rem;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+
+    .login-input-wrap {
+      position: relative;
+      margin-bottom: 16px;
+    }
+
+    .login-input {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-size: 1rem;
+      padding: 12px 44px 12px 16px;
+      outline: none;
+      transition: border-color .2s;
+    }
+
+    .login-input:focus { border-color: var(--primary); }
+
+    .login-toggle-pw {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 1rem;
+      padding: 4px;
+      line-height: 1;
+    }
+
+    .login-error {
+      color: var(--red);
+      font-size: .82rem;
+      margin-bottom: 12px;
+      min-height: 18px;
+    }
+
+    .login-hint {
+      font-size: .75rem;
+      color: var(--text-muted);
+      margin-top: 14px;
+    }
+
+    /* Lock badge on locked sections */
+    .section-lock-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: .75rem;
+      padding: 3px 10px;
+      border-radius: 50px;
+      font-weight: 700;
+      background: rgba(231,76,60,.12);
+      color: var(--red);
+      border: 1px solid rgba(231,76,60,.3);
+    }
+
+    /* ── Scrollbar ── */
+    html { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+
+    @media (max-width: 680px) {
+      .qr-manager { flex-direction: column; }
+      .section-header { flex-direction: column; align-items: flex-start; }
+      table { font-size: .78rem; }
+      thead th, tbody td { padding: 8px 10px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Login overlay ── -->
+<div class="login-overlay" id="login-overlay">
+  <div class="login-card">
+    <div class="login-icon">🔐</div>
+    <h2>Beheerder inloggen</h2>
+    <p>Voer het wachtwoord in voor toegang tot de beveiligde beheeronderdelen (QR code &amp; Producten).</p>
+    <div class="login-input-wrap">
+      <input type="password" class="login-input" id="login-password"
+             placeholder="Wachtwoord"
+             onkeydown="if(event.key==='Enter')doLogin()" />
+      <button class="login-toggle-pw" tabindex="-1"
+              onclick="togglePwVisibility()" title="Toon/verberg wachtwoord">👁</button>
+    </div>
+    <div class="login-error" id="login-error"></div>
+    <button class="btn-primary" style="width:100%;justify-content:center;" onclick="doLogin()">
+      🔓 Inloggen
+    </button>
+    <div class="login-hint">Standaard wachtwoord: <strong>admin</strong><br>Wijzig via de knop in het beheerscherm.</div>
+  </div>
+</div>
+
+<header>
+  <div class="logo">🍟 Snack<span>Bestel</span><small>Beheer</small></div>
+  <div class="header-actions">
+    <button class="theme-toggle" id="theme-toggle-btn" onclick="toggleTheme()" title="Wissel licht/donker"></button>
+    <a href="snack-order.html" class="back-link">← Terug naar bestelscherm</a>
+  </div>
+</header>
+
+<div class="admin-container">
+
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+    <div>
+      <div class="page-title">⚙ Beheerscherm</div>
+      <div class="page-subtitle">Beheer bestellingen, sluit datums af en upload de betaal QR code.</div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+      <button class="btn-secondary" id="change-pw-btn" onclick="showChangePw()" title="Wachtwoord wijzigen" style="display:none;">🔑 Wachtwoord</button>
+      <button class="btn-secondary" id="logout-btn" onclick="doLogout()" style="display:none;">🔒 Uitloggen</button>
+    </div>
+  </div>
+
+  <!-- ── Section 1: Betaal QR ── -->
+  <div class="admin-section" id="section-qr">
+    <div class="section-header">
+      <h2>💳 Betaal QR Code <span class="section-lock-badge" id="qr-lock-badge">🔒 Beveiligd</span></h2>
+    </div>
+    <div class="section-body">
+      <div class="qr-manager">
+        <div class="qr-preview" id="qr-preview-area">
+          <div class="no-qr">
+            <span>📷</span>
+            Geen QR
+          </div>
+        </div>
+        <div class="qr-controls">
+          <div class="qr-status inactive" id="qr-status">● Geen QR code actief</div>
+          <p>Upload een Tikkie, PayConiq of iDEAL QR-afbeelding (PNG, JPG — max. 2 MB). De QR wordt direct getoond aan klanten in het bestelscherm en na het plaatsen van een bestelling.</p>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <label class="btn-primary" for="qr-file-input">
+              📤 QR uploaden
+              <input type="file" id="qr-file-input" accept="image/*"
+                     style="display:none;" onchange="handleQRUpload(event)" />
+            </label>
+            <button class="btn-danger" onclick="removeQR()">🗑 QR verwijderen</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Section 2: Chat API Key ── -->
+  <div class="admin-section" id="section-apikey">
+    <div class="section-header">
+      <h2>🤖 Chat Assistent API Key <span class="section-lock-badge" id="apikey-lock-badge">🔒 Beveiligd</span></h2>
+    </div>
+    <div class="section-body" id="apikey-section-body">
+      <div style="padding:20px 22px;display:flex;flex-direction:column;gap:14px;max-width:520px;">
+        <p style="font-size:.88rem;color:var(--text-muted);line-height:1.6;">
+          Voer hier de Anthropic API key in voor de chat-assistent op het bestelscherm. Klanten hoeven zelf geen key in te voeren.
+        </p>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <div style="position:relative;flex:1;">
+            <input type="password" class="login-input" id="admin-api-key-input"
+                   placeholder="sk-ant-api03-..."
+                   style="font-family:monospace;font-size:.85rem;padding-right:44px;"
+                   onkeydown="if(event.key==='Enter')saveAdminApiKey()" />
+            <button onclick="toggleAdminKeyVisibility()" title="Toon/verberg"
+                    style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1rem;padding:4px;">👁</button>
+          </div>
+          <button class="btn-primary" onclick="saveAdminApiKey()" style="white-space:nowrap;">💾 Opslaan</button>
+        </div>
+        <div id="apikey-status" style="font-size:.82rem;"></div>
+        <button class="btn-secondary" id="apikey-remove-btn" onclick="removeAdminApiKey()" style="display:none;align-self:flex-start;">🗑 API key verwijderen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Section 2b: SMTPeter e-mail API ── -->
+  <div class="admin-section" id="section-smtpeter">
+    <div class="section-header">
+      <h2>📧 E-mail Bevestiging (SMTPeter) <span class="section-lock-badge" id="smtpeter-lock-badge">🔒 Beveiligd</span></h2>
+    </div>
+    <div class="section-body" id="smtpeter-section-body">
+      <div style="padding:20px 22px;display:flex;flex-direction:column;gap:14px;max-width:560px;">
+        <p style="font-size:.88rem;color:var(--text-muted);line-height:1.6;">
+          Vul hier de SMTPeter API key en het afzenderadres in. Klanten ontvangen na hun bestelling automatisch een bevestigingsmail.
+          De API key vind je in je <a href="https://www.smtpeter.com/app/" target="_blank" style="color:var(--primary);">SMTPeter dashboard</a>.
+        </p>
+
+        <label style="display:flex;flex-direction:column;gap:5px;font-size:.8rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">
+          SMTPeter API Key
+          <div style="display:flex;gap:8px;align-items:center;">
+            <div style="position:relative;flex:1;">
+              <input type="password" class="login-input" id="smtpeter-key-input"
+                     placeholder="jouw-smtpeter-api-key"
+                     style="font-family:monospace;font-size:.85rem;padding-right:44px;"
+                     onkeydown="if(event.key==='Enter')saveSmtpeterSettings()" />
+              <button onclick="toggleSmtpeterKeyVisibility()" title="Toon/verberg"
+                      style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1rem;padding:4px;">👁</button>
+            </div>
+          </div>
+        </label>
+
+        <label style="display:flex;flex-direction:column;gap:5px;font-size:.8rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">
+          Afzender e-mailadres
+          <input type="email" class="login-input" id="smtpeter-from-input"
+                 placeholder="snacks@jouwbedrijf.nl"
+                 style="font-size:.9rem;"
+                 onkeydown="if(event.key==='Enter')saveSmtpeterSettings()" />
+        </label>
+
+        <label style="display:flex;flex-direction:column;gap:5px;font-size:.8rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">
+          Afzender naam <span style="font-weight:400;text-transform:none;letter-spacing:0;">(optioneel)</span>
+          <input type="text" class="login-input" id="smtpeter-fromname-input"
+                 placeholder="Snack Bestelsysteem"
+                 style="font-size:.9rem;"
+                 onkeydown="if(event.key==='Enter')saveSmtpeterSettings()" />
+        </label>
+
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn-primary" onclick="saveSmtpeterSettings()" style="white-space:nowrap;">💾 Opslaan</button>
+          <button class="btn-secondary" id="smtpeter-remove-btn" onclick="removeSmtpeterSettings()" style="display:none;white-space:nowrap;">🗑 Verwijderen</button>
+        </div>
+        <div id="smtpeter-status" style="font-size:.82rem;"></div>
+
+        <!-- Testmail blok -->
+        <div style="border-top:1px solid var(--border);padding-top:14px;display:flex;flex-direction:column;gap:10px;">
+          <p style="font-size:.82rem;color:var(--text-muted);">Stuur een testmail om te controleren of de instellingen correct zijn.</p>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <input type="email" id="smtpeter-test-to" class="login-input"
+                   placeholder="ontvanger@email.nl"
+                   style="flex:1;min-width:200px;font-size:.9rem;"
+                   onkeydown="if(event.key==='Enter')testSmtpeterMail()" />
+            <button class="btn-secondary" id="smtpeter-test-btn" onclick="testSmtpeterMail()" style="white-space:nowrap;">📨 Verstuur testmail</button>
+          </div>
+          <div id="smtpeter-test-result" style="font-size:.82rem;min-height:1.2em;"></div>
+        </div>
+
+        <!-- Log paneel -->
+        <div style="border-top:1px solid var(--border);padding-top:14px;display:flex;flex-direction:column;gap:8px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+            <span style="font-size:.8rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">📋 Verstuurlog</span>
+            <div style="display:flex;gap:6px;">
+              <button class="btn-secondary" onclick="exportSmtpLog()" id="smtpeter-log-export-btn" style="font-size:.75rem;padding:4px 10px;display:none;">⬇ Exporteer log</button>
+              <button class="btn-secondary" onclick="clearSmtpLog()" id="smtpeter-log-clear-btn" style="font-size:.75rem;padding:4px 10px;display:none;">🗑 Wis log</button>
+            </div>
+          </div>
+          <div id="smtpeter-log" class="smtp-log-panel">
+            <span class="smtp-log-empty">Nog geen verzendpogingen — log verschijnt hier na de eerste testmail.</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Section 3: Producten & Prijzen ── -->
+  <div class="admin-section" id="section-producten">
+    <div class="section-header">
+      <h2>🛒 Producten &amp; Prijzen <span class="section-lock-badge" id="producten-lock-badge">🔒 Beveiligd</span></h2>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn-secondary" onclick="exportJSON()">⬇ Export JSON</button>
+        <button class="btn-secondary" onclick="exportCSV()">⬇ Export CSV</button>
+        <label class="btn-secondary" for="import-file" style="cursor:pointer;">
+          ⬆ Import
+          <input type="file" id="import-file" accept=".json,.csv" style="display:none;" onchange="handleImport(event)" />
+        </label>
+        <button class="btn-secondary" onclick="resetMenu()">↺ Reset origineel</button>
+      </div>
+    </div>
+
+    <!-- Opslag instelling -->
+    <div class="opslag-row">
+      <div class="opslag-group">
+        <span class="opslag-label">Opslag op inkoop:</span>
+        <div class="opslag-input-wrap">
+          <input type="number" class="opslag-input" id="opslag-input" min="0" max="200" step="0.5" value="0" oninput="updateOpslag()" />
+          <button class="opslag-mode-btn" id="opslag-mode-btn" onclick="toggleOpslagMode()" title="Wissel tussen % en €">%</button>
+        </div>
+        <span class="opslag-badge" id="opslag-badge">Geen opslag</span>
+      </div>
+      <span style="font-size:.78rem;color:var(--text-muted);">
+        Klik op <strong>%</strong> of <strong>€</strong> om te wisselen tussen percentage en vast bedrag per product.
+      </span>
+    </div>
+
+    <!-- Productenlijst -->
+    <div class="producten-table-wrap">
+      <table class="producten-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Categorie</th>
+            <th>Artikel</th>
+            <th>Basisprijs</th>
+            <th>Verkoopprijs</th>
+          </tr>
+        </thead>
+        <tbody id="producten-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── Section 3: Bestellingen ── -->
+  <div class="admin-section">
+    <div class="section-header">
+      <h2>📋 Bestellingen overzicht</h2>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <button class="btn-secondary" onclick="refreshAll()">↻ Vernieuwen</button>
+        <button class="btn-danger" onclick="deleteAllOrders()" style="padding:7px 14px;font-size:.82rem;">🗑 Alles verwijderen</button>
+      </div>
+    </div>
+
+    <!-- Summary stats -->
+    <div class="stats-row" id="stats-row" style="display:none;"></div>
+
+    <!-- Tab bar -->
+    <div class="tab-bar">
+      <button class="tab-btn active" id="tab-btn-datum" onclick="switchTab('datum')">📅 Per datum</button>
+      <button class="tab-btn" id="tab-btn-naam" onclick="switchTab('naam')">👤 Per naam</button>
+    </div>
+
+    <!-- Tab: Per datum -->
+    <div class="tab-panel active" id="tab-panel-datum">
+      <div class="section-body" id="orders-container">
+        <div class="empty-state">
+          <div class="empty-icon">📭</div>
+          <p>Nog geen bestellingen geplaatst.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Per naam -->
+    <div class="tab-panel" id="tab-panel-naam">
+      <div class="section-body" id="names-container">
+        <div class="empty-state">
+          <div class="empty-icon">📭</div>
+          <p>Nog geen bestellingen geplaatst.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── Change-password modal ── -->
+<div id="change-pw-overlay" style="display:none;position:fixed;inset:0;background:rgba(10,12,20,.88);backdrop-filter:blur(4px);z-index:600;align-items:center;justify-content:center;padding:20px;">
+  <div class="login-card" style="max-width:360px;">
+    <div class="login-icon">🔑</div>
+    <h2>Wachtwoord wijzigen</h2>
+    <p>Voer het huidige wachtwoord in en daarna het nieuwe wachtwoord (minimaal 4 tekens).</p>
+    <div class="login-input-wrap">
+      <input type="password" class="login-input" id="cp-current" placeholder="Huidig wachtwoord" />
+    </div>
+    <div class="login-input-wrap">
+      <input type="password" class="login-input" id="cp-new" placeholder="Nieuw wachtwoord" />
+    </div>
+    <div class="login-input-wrap">
+      <input type="password" class="login-input" id="cp-confirm" placeholder="Bevestig nieuw wachtwoord"
+             onkeydown="if(event.key==='Enter')doChangePw()" />
+    </div>
+    <div class="login-error" id="cp-error"></div>
+    <div style="display:flex;gap:10px;">
+      <button class="btn-secondary" style="flex:1;justify-content:center;" onclick="hideChangePw()">Annuleren</button>
+      <button class="btn-primary" style="flex:1;justify-content:center;" onclick="doChangePw()">Opslaan</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Login / Auth ───────────────────────────────────────────────────────────
+
+const AUTH_KEY = 'snack_admin_pw';
+const SESSION_KEY = 'snack_admin_session';
+const DEFAULT_PW = 'admin';
+
+function getStoredPw() {
+  return localStorage.getItem(AUTH_KEY) || DEFAULT_PW;
+}
+
+function isLoggedIn() {
+  return sessionStorage.getItem(SESSION_KEY) === '1';
+}
+
+function doLogin() {
+  const input = document.getElementById('login-password').value;
+  const errEl = document.getElementById('login-error');
+  if (input === getStoredPw()) {
+    sessionStorage.setItem(SESSION_KEY, '1');
+    document.getElementById('login-overlay').style.display = 'none';
+    setLockedSections(false);
+    errEl.textContent = '';
+  } else {
+    errEl.textContent = 'Onjuist wachtwoord. Probeer het opnieuw.';
+    document.getElementById('login-password').focus();
+  }
+}
+
+function doLogout() {
+  sessionStorage.removeItem(SESSION_KEY);
+  document.getElementById('login-password').value = '';
+  document.getElementById('login-error').textContent = '';
+  document.getElementById('login-overlay').style.display = 'flex';
+  setLockedSections(true);
+}
+
+function togglePwVisibility() {
+  const inp = document.getElementById('login-password');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+
+function setLockedSections(locked) {
+  // Section bodies
+  const qrBody = document.querySelector('#section-qr .section-body');
+  const apikeyBody = document.getElementById('apikey-section-body');
+  const smtpeterBody = document.getElementById('smtpeter-section-body');
+  const prodHeader = document.querySelector('#section-producten .section-header > div');
+  const opslagRow = document.querySelector('.opslag-row');
+  const prodTableWrap = document.querySelector('.producten-table-wrap');
+
+  const qrBadge = document.getElementById('qr-lock-badge');
+  const apikeyBadge = document.getElementById('apikey-lock-badge');
+  const smtpeterBadge = document.getElementById('smtpeter-lock-badge');
+  const prodBadge = document.getElementById('producten-lock-badge');
+  const logoutBtn = document.getElementById('logout-btn');
+  const changePwBtn = document.getElementById('change-pw-btn');
+
+  if (locked) {
+    if (qrBody) { qrBody.style.filter = 'blur(4px)'; qrBody.style.pointerEvents = 'none'; }
+    if (apikeyBody) { apikeyBody.style.filter = 'blur(4px)'; apikeyBody.style.pointerEvents = 'none'; }
+    if (smtpeterBody) { smtpeterBody.style.filter = 'blur(4px)'; smtpeterBody.style.pointerEvents = 'none'; }
+    if (prodHeader) { prodHeader.style.filter = 'blur(4px)'; prodHeader.style.pointerEvents = 'none'; }
+    if (opslagRow) { opslagRow.style.filter = 'blur(4px)'; opslagRow.style.pointerEvents = 'none'; }
+    if (prodTableWrap) { prodTableWrap.style.filter = 'blur(4px)'; prodTableWrap.style.pointerEvents = 'none'; }
+    if (qrBadge) qrBadge.style.display = '';
+    if (apikeyBadge) apikeyBadge.style.display = '';
+    if (smtpeterBadge) smtpeterBadge.style.display = '';
+    if (prodBadge) prodBadge.style.display = '';
+    if (logoutBtn) logoutBtn.style.display = 'none';
+    if (changePwBtn) changePwBtn.style.display = 'none';
+  } else {
+    if (qrBody) { qrBody.style.filter = ''; qrBody.style.pointerEvents = ''; }
+    if (apikeyBody) { apikeyBody.style.filter = ''; apikeyBody.style.pointerEvents = ''; }
+    if (smtpeterBody) { smtpeterBody.style.filter = ''; smtpeterBody.style.pointerEvents = ''; }
+    if (prodHeader) { prodHeader.style.filter = ''; prodHeader.style.pointerEvents = ''; }
+    if (opslagRow) { opslagRow.style.filter = ''; opslagRow.style.pointerEvents = ''; }
+    if (prodTableWrap) { prodTableWrap.style.filter = ''; prodTableWrap.style.pointerEvents = ''; }
+    if (qrBadge) qrBadge.style.display = 'none';
+    if (apikeyBadge) apikeyBadge.style.display = 'none';
+    if (smtpeterBadge) smtpeterBadge.style.display = 'none';
+    if (prodBadge) prodBadge.style.display = 'none';
+    if (logoutBtn) logoutBtn.style.display = '';
+    if (changePwBtn) changePwBtn.style.display = '';
+  }
+}
+
+// Change password
+function showChangePw() {
+  document.getElementById('cp-current').value = '';
+  document.getElementById('cp-new').value = '';
+  document.getElementById('cp-confirm').value = '';
+  document.getElementById('cp-error').textContent = '';
+  const ov = document.getElementById('change-pw-overlay');
+  ov.style.display = 'flex';
+  setTimeout(() => document.getElementById('cp-current').focus(), 50);
+}
+
+function hideChangePw() {
+  document.getElementById('change-pw-overlay').style.display = 'none';
+}
+
+function doChangePw() {
+  const cur = document.getElementById('cp-current').value;
+  const nw = document.getElementById('cp-new').value;
+  const conf = document.getElementById('cp-confirm').value;
+  const errEl = document.getElementById('cp-error');
+
+  if (cur !== getStoredPw()) { errEl.textContent = 'Huidig wachtwoord is onjuist.'; return; }
+  if (nw.length < 4) { errEl.textContent = 'Nieuw wachtwoord moet minimaal 4 tekens zijn.'; return; }
+  if (nw !== conf) { errEl.textContent = 'Wachtwoorden komen niet overeen.'; return; }
+
+  localStorage.setItem(AUTH_KEY, nw);
+  hideChangePw();
+  showToast('✓ Wachtwoord gewijzigd');
+}
+
+function showToast(msg) {
+  const el = document.createElement('div');
+  el.style.cssText = 'position:fixed;bottom:24px;right:24px;background:var(--green);color:#000;font-weight:700;padding:12px 20px;border-radius:10px;z-index:9999;font-size:.9rem;box-shadow:0 4px 16px rgba(0,0,0,.4);';
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 3000);
+}
+
+// ── localStorage helpers ──────────────────────────────────────────────────
+
+function fmt(n) {
+  return '€ ' + n.toFixed(2).replace('.', ',');
+}
+
+function getOrders() {
+  try { return JSON.parse(localStorage.getItem('snack_orders') || '[]'); }
+  catch { return []; }
+}
+
+function saveOrders(orders) {
+  localStorage.setItem('snack_orders', JSON.stringify(orders));
+}
+
+function getClosedDates() {
+  try { return JSON.parse(localStorage.getItem('closed_dates') || '[]'); }
+  catch { return []; }
+}
+
+function saveClosedDates(dates) {
+  localStorage.setItem('closed_dates', JSON.stringify(dates));
+}
+
+function escapeHtml(str) {
+  return String(str || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+// ── QR Management ─────────────────────────────────────────────────────────
+
+function loadQRPreview() {
+  const qr = localStorage.getItem('payment_qr');
+  const area = document.getElementById('qr-preview-area');
+  const status = document.getElementById('qr-status');
+
+  if (qr) {
+    area.innerHTML = `<img src="${qr}" alt="Huidige betaal QR code" />`;
+    status.className = 'qr-status active';
+    status.textContent = '● QR code actief — zichtbaar voor klanten';
+  } else {
+    area.innerHTML = `<div class="no-qr"><span>📷</span>Geen QR</div>`;
+    status.className = 'qr-status inactive';
+    status.textContent = '● Geen QR code actief';
+  }
+}
+
+function handleQRUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  if (!file.type.startsWith('image/')) {
+    alert('Alleen afbeeldingen zijn toegestaan (PNG, JPG, GIF, WebP, etc.)');
+    event.target.value = '';
+    return;
+  }
+
+  if (file.size > 2 * 1024 * 1024) {
+    alert('Afbeelding is te groot. Maximum bestandsgrootte is 2 MB.');
+    event.target.value = '';
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    localStorage.setItem('payment_qr', e.target.result);
+    loadQRPreview();
+  };
+  reader.readAsDataURL(file);
+  event.target.value = '';
+}
+
+function removeQR() {
+  if (!localStorage.getItem('payment_qr')) {
+    alert('Er is geen QR code om te verwijderen.');
+    return;
+  }
+  if (!confirm('Weet je zeker dat je de betaal QR wilt verwijderen? Klanten zien daarna geen betaal QR meer.')) return;
+  localStorage.removeItem('payment_qr');
+  loadQRPreview();
+}
+
+// ── Date management ───────────────────────────────────────────────────────
+
+function closeDate(dateStr) {
+  const dates = getClosedDates();
+  if (!dates.includes(dateStr)) {
+    dates.push(dateStr);
+    saveClosedDates(dates);
+  }
+  renderOrders();
+}
+
+function reopenDate(dateStr) {
+  const dates = getClosedDates().filter(d => d !== dateStr);
+  saveClosedDates(dates);
+  renderOrders();
+}
+
+function deleteDate(dateStr) {
+  if (!confirm(`Weet je zeker dat je alle bestellingen voor ${dateStr} wilt verwijderen?\n\nDit kan niet ongedaan worden gemaakt.`)) return;
+  const orders = getOrders().filter(o => o.date !== dateStr);
+  saveOrders(orders);
+  const dates = getClosedDates().filter(d => d !== dateStr);
+  saveClosedDates(dates);
+  renderOrders();
+}
+
+function deleteAllOrders() {
+  const orders = getOrders();
+  if (!orders.length) { alert('Er zijn geen bestellingen om te verwijderen.'); return; }
+  if (!confirm(`Weet je zeker dat je ALLE ${orders.length} bestellingen wilt verwijderen?\n\nDit kan niet ongedaan worden gemaakt.`)) return;
+  localStorage.removeItem('snack_orders');
+  localStorage.removeItem('closed_dates');
+  renderOrders();
+}
+
+// ── Aggregation ───────────────────────────────────────────────────────────
+
+function aggregateItems(orders) {
+  const counts = {};
+  orders.forEach(order => {
+    (order.items || []).forEach(item => {
+      counts[item.name] = (counts[item.name] || 0) + item.qty;
+    });
+  });
+  return counts;
+}
+
+function formatAggregate(counts) {
+  return Object.entries(counts)
+    .sort((a, b) => b[1] - a[1])
+    .map(([name, qty]) => `${qty}× ${name}`)
+    .join(' &nbsp;·&nbsp; ');
+}
+
+// ── Doorbestelblok bouwen ─────────────────────────────────────────────────
+function buildDoorbestelBlock(date, dateOrders) {
+  // Aggregate: { itemName: { qty, price } }
+  const agg = {};
+  dateOrders.forEach(order => {
+    (order.items || []).forEach(item => {
+      if (!agg[item.name]) agg[item.name] = { qty: 0, price: item.price };
+      agg[item.name].qty += item.qty;
+    });
+  });
+
+  const rows = Object.entries(agg).sort((a, b) => b[1].qty - a[1].qty);
+  const orderTotal = dateOrders.reduce((s, o) => s + o.total, 0);
+  const tipTotal   = dateOrders.reduce((s, o) => s + (o.fooi || 0), 0);
+  const itemsTotal = orderTotal - tipTotal;
+
+  const block = document.createElement('div');
+  block.className = 'doorbestel-block';
+
+  const title = document.createElement('div');
+  title.className = 'doorbestel-title';
+  title.innerHTML = `
+    <span>📦 Doorbesteloverzicht — ${date}</span>
+    <button class="print-btn" onclick="window.print()">🖨 Afdrukken</button>`;
+  block.appendChild(title);
+
+  const tableWrap = document.createElement('div');
+  tableWrap.style.overflowX = 'auto';
+
+  const table = document.createElement('table');
+  table.className = 'doorbestel-table';
+  table.innerHTML = `
+    <thead>
+      <tr>
+        <th>Aantal</th>
+        <th>Artikel</th>
+        <th>Stukprijs</th>
+        <th>Subtotaal</th>
+      </tr>
+    </thead>`;
+
+  const tbody = document.createElement('tbody');
+
+  rows.forEach(([name, { qty, price }]) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="qty-cell">${qty}×</td>
+      <td>${escapeHtml(name)}</td>
+      <td class="price-cell">${fmt(price)}</td>
+      <td class="subtotal-cell">${fmt(price * qty)}</td>`;
+    tbody.appendChild(tr);
+  });
+
+  // Totaal items row
+  const totalItemsTr = document.createElement('tr');
+  totalItemsTr.className = 'doorbestel-totaal-row';
+  totalItemsTr.innerHTML = `
+    <td colspan="3" style="text-align:right;color:var(--text-muted);font-size:.82rem;">
+      Totaal artikelen
+    </td>
+    <td class="price-cell" style="font-size:1rem;">${fmt(itemsTotal)}</td>`;
+  tbody.appendChild(totalItemsTr);
+
+  // Fooi row (only if there is tip)
+  if (tipTotal > 0) {
+    const tipTr = document.createElement('tr');
+    tipTr.innerHTML = `
+      <td colspan="3" style="text-align:right;color:var(--text-muted);font-size:.82rem;padding-top:4px;">
+        🪙 Fooi
+      </td>
+      <td class="price-cell" style="font-size:.9rem;padding-top:4px;">${fmt(tipTotal)}</td>`;
+    tbody.appendChild(tipTr);
+  }
+
+  // Grand total
+  const grandTr = document.createElement('tr');
+  grandTr.innerHTML = `
+    <td colspan="3" style="text-align:right;font-weight:800;padding-top:10px;border-top:2px solid var(--border);">
+      TOTAAL TE BETALEN
+    </td>
+    <td style="font-weight:800;font-size:1.15rem;color:var(--accent);padding-top:10px;border-top:2px solid var(--border);">
+      ${fmt(orderTotal)}
+    </td>`;
+  tbody.appendChild(grandTr);
+
+  table.appendChild(tbody);
+  tableWrap.appendChild(table);
+  block.appendChild(tableWrap);
+
+  // Footer: number of people
+  const footer = document.createElement('div');
+  footer.style.cssText = 'margin-top:12px;font-size:.78rem;color:var(--text-muted);';
+  footer.textContent = `${dateOrders.length} besteller${dateOrders.length !== 1 ? 's' : ''} · ${rows.length} verschillende artikel${rows.length !== 1 ? 'en' : ''}`;
+  block.appendChild(footer);
+
+  return block;
+}
+
+// ── Parse date string "DD-MM-YYYY" to Date ────────────────────────────────
+function parseDate(s) {
+  const [dd, mm, yyyy] = s.split('-');
+  return new Date(`${yyyy}-${mm}-${dd}`);
+}
+
+// ── Render ────────────────────────────────────────────────────────────────
+
+function renderStats(orders) {
+  const statsRow = document.getElementById('stats-row');
+  if (!orders.length) { statsRow.style.display = 'none'; return; }
+
+  const totalRevenue = orders.reduce((s, o) => s + o.total, 0);
+  const totalTip = orders.reduce((s, o) => s + (o.fooi || 0), 0);
+  const uniqueDates = [...new Set(orders.map(o => o.date))].length;
+  const uniquePersons = [...new Set(orders.map(o => o.name.trim().toLowerCase()))].length;
+
+  statsRow.style.display = 'flex';
+  statsRow.innerHTML = `
+    <div class="stat-card">
+      <div class="stat-label">Bestellingen</div>
+      <div class="stat-value green">${orders.length}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Totaal omzet</div>
+      <div class="stat-value">${fmt(totalRevenue)}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Totaal fooi</div>
+      <div class="stat-value">${fmt(totalTip)}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Besteldagen</div>
+      <div class="stat-value green">${uniqueDates}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Unieke personen</div>
+      <div class="stat-value green">${uniquePersons}</div>
+    </div>`;
+}
+
+function renderOrders() {
+  const orders = getOrders();
+  const closedDates = getClosedDates();
+  const container = document.getElementById('orders-container');
+
+  renderStats(orders);
+
+  if (!orders.length) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">📭</div>
+        <p>Nog geen bestellingen geplaatst.</p>
+      </div>`;
+    return;
+  }
+
+  // Group by date
+  const grouped = {};
+  orders.forEach(order => {
+    if (!grouped[order.date]) grouped[order.date] = [];
+    grouped[order.date].push(order);
+  });
+
+  // Sort dates descending
+  const sortedDates = Object.keys(grouped).sort((a, b) => parseDate(b) - parseDate(a));
+
+  container.innerHTML = '';
+
+  sortedDates.forEach(date => {
+    const dateOrders = grouped[date].sort((a, b) => a.timestamp - b.timestamp);
+    const isClosed = closedDates.includes(date);
+    const grandTotal = dateOrders.reduce((s, o) => s + o.total, 0);
+    const grandTip = dateOrders.reduce((s, o) => s + (o.fooi || 0), 0);
+    const aggregate = aggregateItems(dateOrders);
+    const aggregateText = formatAggregate(aggregate);
+
+    const group = document.createElement('div');
+    group.className = 'date-group';
+
+    // Date header
+    const headerDiv = document.createElement('div');
+    headerDiv.className = 'date-header';
+    headerDiv.innerHTML = `
+      <div class="date-header-left">
+        <span class="date-label">📅 ${date}</span>
+        <span class="badge ${isClosed ? 'badge-closed' : 'badge-open'}">
+          ${isClosed ? '🔒 Afgesloten' : '🟢 Open'}
+        </span>
+        <span class="date-meta">${dateOrders.length} bestelling${dateOrders.length !== 1 ? 'en' : ''} &nbsp;·&nbsp; Totaal: <strong style="color:var(--accent)">${fmt(grandTotal)}</strong></span>
+      </div>
+      <div class="date-actions">
+        ${isClosed
+          ? `<button class="btn-reopen-date" onclick="reopenDate('${date}')">🔓 Heropenen</button>`
+          : `<button class="btn-close-date" onclick="closeDate('${date}')">🔒 Afsluiten</button>`
+        }
+        <button class="btn-delete-date" onclick="deleteDate('${date}')">🗑 Verwijderen</button>
+      </div>`;
+    group.appendChild(headerDiv);
+
+    // Aggregate bar
+    if (aggregateText) {
+      const aggBar = document.createElement('div');
+      aggBar.className = 'aggregate-bar';
+      aggBar.innerHTML = `<strong>Alle items:</strong> &nbsp;${aggregateText}`;
+      group.appendChild(aggBar);
+    }
+
+    // Table
+    const tableWrap = document.createElement('div');
+    tableWrap.className = 'table-wrap';
+
+    const table = document.createElement('table');
+    table.innerHTML = `
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Naam</th>
+          <th>Afdeling</th>
+          <th>Bestelling</th>
+          <th>Fooi</th>
+          <th>Totaal</th>
+          <th>Tijdstip</th>
+        </tr>
+      </thead>`;
+
+    const tbody = document.createElement('tbody');
+
+    dateOrders.forEach((order, idx) => {
+      const itemsHtml = (order.items || [])
+        .map(it => `${it.qty}× ${escapeHtml(it.name)}`)
+        .join('<br>');
+      const time = new Date(order.timestamp).toLocaleTimeString('nl-NL', {
+        hour: '2-digit', minute: '2-digit'
+      });
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td style="color:var(--text-muted);font-size:.78rem;">${idx + 1}</td>
+        <td><strong>${escapeHtml(order.name)}</strong></td>
+        <td>${escapeHtml(order.dept || '—')}</td>
+        <td class="td-items">${itemsHtml || '—'}</td>
+        <td style="color:var(--text-muted);">${order.fooi > 0 ? fmt(order.fooi) : '—'}</td>
+        <td class="td-total">${fmt(order.total)}</td>
+        <td class="td-time">${time}</td>`;
+      tbody.appendChild(tr);
+    });
+
+    // Grand total row
+    const totalTr = document.createElement('tr');
+    totalTr.className = 'tr-grand-total';
+    totalTr.innerHTML = `
+      <td colspan="4" style="text-align:right;color:var(--text-muted);font-size:.82rem;font-weight:600;">
+        Dagtotaal (incl. ${fmt(grandTip)} fooi) →
+      </td>
+      <td></td>
+      <td class="td-total" style="font-size:1rem;">${fmt(grandTotal)}</td>
+      <td></td>`;
+    tbody.appendChild(totalTr);
+
+    table.appendChild(tbody);
+    tableWrap.appendChild(table);
+    group.appendChild(tableWrap);
+
+    // Doorbestelblok
+    group.appendChild(buildDoorbestelBlock(date, dateOrders));
+
+    container.appendChild(group);
+  });
+}
+
+// ── Tabs ──────────────────────────────────────────────────────────────────
+
+let activeTab = 'datum';
+
+function switchTab(tab) {
+  activeTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-btn-' + tab).classList.add('active');
+  document.getElementById('tab-panel-' + tab).classList.add('active');
+  if (tab === 'naam') renderByName();
+}
+
+function refreshAll() {
+  renderOrders();
+  if (activeTab === 'naam') renderByName();
+}
+
+// ── Per naam overzicht ────────────────────────────────────────────────────
+
+function renderByName() {
+  const orders = getOrders();
+  const container = document.getElementById('names-container');
+
+  if (!orders.length) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">📭</div>
+        <p>Nog geen bestellingen geplaatst.</p>
+      </div>`;
+    return;
+  }
+
+  // Group by date (sorted descending), within each date group by name
+  const grouped = {};
+  orders.forEach(order => {
+    if (!grouped[order.date]) grouped[order.date] = {};
+    const name = order.name.trim();
+    if (!grouped[order.date][name]) grouped[order.date][name] = [];
+    grouped[order.date][name].push(order);
+  });
+
+  const sortedDates = Object.keys(grouped).sort((a, b) => parseDate(b) - parseDate(a));
+
+  container.innerHTML = '';
+
+  sortedDates.forEach(date => {
+    const dateGroup = document.createElement('div');
+    dateGroup.className = 'name-date-group';
+
+    const label = document.createElement('div');
+    label.className = 'name-date-label';
+    label.textContent = `📅 ${date}`;
+    dateGroup.appendChild(label);
+
+    const nameMap = grouped[date];
+    // Sort names alphabetically
+    const sortedNames = Object.keys(nameMap).sort((a, b) => a.localeCompare(b, 'nl'));
+
+    sortedNames.forEach(name => {
+      const personOrders = nameMap[name].sort((a, b) => a.timestamp - b.timestamp);
+
+      personOrders.forEach(order => {
+        const card = document.createElement('div');
+        card.className = 'name-card';
+
+        const itemsHtml = (order.items || [])
+          .map(it => `${it.qty}× ${escapeHtml(it.name)}`)
+          .join('<br>');
+
+        const time = new Date(order.timestamp).toLocaleTimeString('nl-NL', {
+          hour: '2-digit', minute: '2-digit'
+        });
+
+        card.innerHTML = `
+          <div class="name-card-left">
+            <div class="name-card-name">${escapeHtml(name)}</div>
+            ${order.dept ? `<div class="name-card-dept">${escapeHtml(order.dept)}</div>` : ''}
+            <div class="name-card-items">${itemsHtml || '—'}</div>
+          </div>
+          <div class="name-card-right">
+            <div class="name-card-total">${fmt(order.total)}</div>
+            ${order.fooi > 0 ? `<div class="name-card-time" style="color:var(--text-muted);">🪙 ${fmt(order.fooi)} fooi</div>` : ''}
+            <div class="name-card-time">${time}</div>
+          </div>`;
+
+        dateGroup.appendChild(card);
+      });
+    });
+
+    container.appendChild(dateGroup);
+  });
+}
+
+// ── Menu basisdata (origineel, ongewijzigd) ───────────────────────────────
+const MENU_DEFAULT = [
+  { nr:6,  cat:"Eigen snack", name:"Patat Speciaal Kipkruiden",         price:3.50 },
+  { nr:7,  cat:"Eigen snack", name:"Pittige bamischijf mayo",            price:3.30 },
+  { nr:8,  cat:"Eigen snack", name:"Vindel Mayo",                        price:3.45 },
+  { nr:9,  cat:"Eigen snack", name:"Patat oorlog + ui en kipkruiden",    price:3.70 },
+  { nr:10, cat:"Eigen snack", name:"Patat curry",                        price:3.50 },
+  { nr:11, cat:"Eigen snack", name:"Patat curry kipkruiden",             price:3.50 },
+  { nr:12, cat:"Eigen snack", name:"Gehaktbal Curry",                    price:4.50 },
+  { nr:13, cat:"Eigen snack", name:"Broodje braadworst",                 price:5.00 },
+  { nr:14, cat:"Eigen snack", name:"Belegd broodje brie wit",            price:6.85 },
+  { nr:15, cat:"Eigen snack", name:"Portie kipnuggets (6)",              price:3.95 },
+  { nr:16, cat:"Eigen snack", name:"Witte pistolet Gezond",              price:6.85 },
+  { nr:17, cat:"Patat", name:"Patat Kipkruiden Mayo",          price:3.50 },
+  { nr:18, cat:"Patat", name:"Patat sate kipkruiden",          price:3.50 },
+  { nr:19, cat:"Patat", name:"Patat oorlog",                   price:3.70 },
+  { nr:20, cat:"Patat", name:"Patat Saté",                     price:3.70 },
+  { nr:21, cat:"Patat", name:"Patat Joppiesaus",               price:3.70 },
+  { nr:22, cat:"Patat", name:"Grote Patat Kipkruiden Mayo",    price:4.85 },
+  { nr:23, cat:"Patat", name:"Grote Patat Kipkruiden speciaal",price:5.05 },
+  { nr:24, cat:"Patat", name:"Grote Patat oorlog",             price:5.05 },
+  { nr:25, cat:"Patat", name:"Grote Patat Saté",               price:5.05 },
+  { nr:26, cat:"Patat", name:"Patat Stoofvlees",               price:7.60 },
+  { nr:27, cat:"Patat", name:"Patat Pulled Pork",              price:11.05 },
+  { nr:28, cat:"Patat", name:"Grote patat zonder kipkruiden",  price:4.10 },
+  { nr:29, cat:"Patat", name:"Patat zonder",                   price:2.70 },
+  { nr:30, cat:"Patat", name:"Patat speciaal",                 price:3.50 },
+  { nr:31, cat:"Snacks", name:"Kroket (mosterd)",          price:2.40 },
+  { nr:32, cat:"Snacks", name:"Kwekkeboom kroket",         price:3.00 },
+  { nr:33, cat:"Snacks", name:"Kalfskroket",               price:3.00 },
+  { nr:34, cat:"Snacks", name:"Kipcorn",                   price:2.50 },
+  { nr:35, cat:"Snacks", name:"Kipcorn Mayo",              price:3.20 },
+  { nr:36, cat:"Snacks", name:"Kipcorn Saté",              price:3.20 },
+  { nr:37, cat:"Snacks", name:"Frikadel",                  price:2.40 },
+  { nr:38, cat:"Snacks", name:"Frikadel Mayo",             price:3.10 },
+  { nr:39, cat:"Snacks", name:"Frikadel speciaal",         price:3.10 },
+  { nr:40, cat:"Snacks", name:"Bamischijf",                price:2.65 },
+  { nr:41, cat:"Snacks", name:"Berehap Mayo",              price:4.05 },
+  { nr:42, cat:"Snacks", name:"Berehap Saté",              price:4.05 },
+  { nr:43, cat:"Snacks", name:"Pikanto Mayo",              price:3.50 },
+  { nr:44, cat:"Snacks", name:"Kaassouffle",               price:2.70 },
+  { nr:45, cat:"Snacks", name:"Kaassouffle Saté",          price:3.50 },
+  { nr:46, cat:"Snacks", name:"Gehaktbal Mayo",            price:4.55 },
+  { nr:47, cat:"Snacks", name:"Gehaktbal Saté",            price:4.75 },
+  { nr:48, cat:"Snacks", name:"Gehaktbal Curry",           price:4.55 },
+  { nr:50, cat:"Snacks", name:"Mexicano",                  price:3.10 },
+  { nr:51, cat:"Snacks", name:"Mexicano Mayo",             price:3.80 },
+  { nr:52, cat:"Snacks", name:"Mexicano Saté",             price:4.00 },
+  { nr:54, cat:"Snacks", name:"Pulled chicken wit pistolet", price:7.50 },
+  { nr:55, cat:"Snacks", name:"Pulled chicken bruin pistolet", price:7.50 },
+  { nr:56, cat:"Snacks", name:"Chicken Strips (3)",        price:4.30 },
+  { nr:57, cat:"Snacks", name:"Chicken Strips (5)",        price:7.05 },
+  { nr:59, cat:"Broodje", name:"Broodje Hamburger Mayo",        price:4.35 },
+  { nr:60, cat:"Broodje", name:"Broodje Hamburger Speciaal",    price:4.35 },
+  { nr:61, cat:"Broodje", name:"Chicagoburger",                 price:5.00 },
+  { nr:62, cat:"Broodje", name:"Beefburger",                    price:8.60 },
+  { nr:63, cat:"Broodje", name:"Broodje Beenham Pistolet bruin",price:7.90 },
+  { nr:64, cat:"Broodje", name:"Kipburger",                     price:4.25 },
+  { nr:65, cat:"Broodje", name:"Broodje Kroket",                price:3.40 },
+  { nr:66, cat:"Broodje", name:"Broodje Kwekkeboom",            price:4.00 },
+  { nr:67, cat:"Broodje", name:"Broodje Kalfskroket",           price:4.05 },
+  { nr:68, cat:"Broodje", name:"Broodje Frikadel Mayo",         price:4.05 },
+  { nr:69, cat:"Broodje", name:"Broodje Gehaktbal Mayo",        price:5.55 },
+  { nr:70, cat:"Broodje", name:"Broodje Gehaktbal Saté",        price:5.75 },
+  { nr:71, cat:"Broodje", name:"Broodje Beenham",               price:6.50 },
+  { nr:72, cat:"Broodje", name:"Broodje pulled pork",           price:9.35 },
+  { nr:73, cat:"Broodje", name:"Broodje Beenham Pistolet wit",  price:7.90 },
+  { nr:74, cat:"Broodje", name:"Broodje avocadoburger",         price:7.95 },
+  { nr:75, cat:"Frisdrank", name:"Blikje Cola",      price:3.00 },
+  { nr:76, cat:"Frisdrank", name:"Blikje Fristi",    price:3.15 },
+  { nr:77, cat:"Frisdrank", name:"Flesje Cola",      price:3.40 },
+  { nr:78, cat:"Frisdrank", name:"Flesje Cola Zero", price:3.40 },
+  { nr:79, cat:"Frisdrank", name:"Blikje Redbull",   price:3.50 },
+  { nr:81, cat:"Frisdrank", name:"Blikje Fanta",     price:3.00 },
+  { nr:82, cat:"Frisdrank", name:"Flesje Fanta",     price:3.40 },
+  { nr:83, cat:"Frisdrank", name:"Flesje 7Up",       price:3.40 },
+  { nr:84, cat:"Milkshake", name:"Kleine Milkshake Aardbei", price:3.35 },
+  { nr:85, cat:"Milkshake", name:"Kleine Milkshake Vanille", price:3.35 },
+  { nr:86, cat:"Milkshake", name:"Kleine Milkshake Oreo",    price:3.35 },
+  { nr:87, cat:"Milkshake", name:"Middel Milkshake Aardbei", price:3.85 },
+  { nr:88, cat:"Milkshake", name:"Middel Milkshake Vanille", price:3.85 },
+  { nr:89, cat:"Milkshake", name:"Middel Milkshake Oreo",    price:3.85 },
+  { nr:90, cat:"Milkshake", name:"Groot Milkshake Aardbei",  price:4.35 },
+  { nr:91, cat:"Milkshake", name:"Groot Milkshake Vanille",  price:4.35 },
+  { nr:92, cat:"Milkshake", name:"Groot Milkshake Oreo",     price:4.35 },
+];
+
+// ── Menu helpers ──────────────────────────────────────────────────────────
+
+function getMenu() {
+  try {
+    const stored = localStorage.getItem('snack_menu');
+    if (stored) return JSON.parse(stored);
+  } catch {}
+  return MENU_DEFAULT.map(i => ({ ...i }));
+}
+
+function saveMenu(menu) {
+  localStorage.setItem('snack_menu', JSON.stringify(menu));
+}
+
+function getOpslag() {
+  return parseFloat(localStorage.getItem('snack_opslag') || '0');
+}
+
+function saveOpslag(val) {
+  localStorage.setItem('snack_opslag', String(val));
+}
+
+function getOpslagMode() {
+  return localStorage.getItem('snack_opslag_mode') || 'pct';
+}
+
+function saveOpslagMode(mode) {
+  localStorage.setItem('snack_opslag_mode', mode);
+}
+
+function applyOpslag(basePrice, val) {
+  if (!val) return basePrice;
+  const mode = getOpslagMode();
+  if (mode === 'eur') {
+    return Math.round((basePrice + val) * 20) / 20;
+  }
+  return Math.round(basePrice * (1 + val / 100) * 20) / 20; // round to nearest 0.05
+}
+
+// ── Opslag instellen ──────────────────────────────────────────────────────
+
+function toggleOpslagMode() {
+  const current = getOpslagMode();
+  const newMode = current === 'pct' ? 'eur' : 'pct';
+  saveOpslagMode(newMode);
+  // Reset value when switching to avoid confusing units
+  document.getElementById('opslag-input').value = 0;
+  saveOpslag(0);
+  _syncOpslagModeUI(newMode);
+  updateOpslag();
+}
+
+function _syncOpslagModeUI(mode) {
+  const btn = document.getElementById('opslag-mode-btn');
+  const inp = document.getElementById('opslag-input');
+  if (mode === 'eur') {
+    btn.textContent = '€';
+    inp.step = '0.05';
+    inp.max = '50';
+  } else {
+    btn.textContent = '%';
+    inp.step = '0.5';
+    inp.max = '200';
+  }
+}
+
+function updateOpslag() {
+  const val = parseFloat(document.getElementById('opslag-input').value) || 0;
+  saveOpslag(val);
+  const mode = getOpslagMode();
+  const badge = document.getElementById('opslag-badge');
+  if (val === 0) {
+    badge.textContent = 'Geen opslag';
+    badge.style.color = 'var(--text-muted)';
+  } else if (mode === 'eur') {
+    badge.textContent = `+€ ${val.toFixed(2).replace('.', ',')} per product`;
+    badge.style.color = 'var(--accent)';
+  } else {
+    badge.textContent = `+${val}% opslag actief`;
+    badge.style.color = 'var(--accent)';
+  }
+  renderProducten();
+}
+
+// ── Producten tabel renderen ──────────────────────────────────────────────
+
+function renderProducten() {
+  const menu = getMenu();
+  const opslag = getOpslag();
+  const tbody = document.getElementById('producten-tbody');
+  tbody.innerHTML = '';
+
+  menu.forEach((item, idx) => {
+    const verkoopprijs = applyOpslag(item.price, opslag);
+    const meerprijs = verkoopprijs - item.price;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="color:var(--text-muted);font-size:.75rem;">${idx + 1}</td>
+      <td><span class="cat-badge">${escapeHtml(item.cat)}</span></td>
+      <td>${escapeHtml(item.name)}</td>
+      <td class="price-orig">${fmt(item.price)}</td>
+      <td>
+        <span class="price-final">${fmt(verkoopprijs)}</span>
+        ${meerprijs > 0.001 ? `<br><span class="price-markup">+${fmt(meerprijs)}</span>` : ''}
+      </td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+// ── Export ────────────────────────────────────────────────────────────────
+
+function exportJSON() {
+  const menu = getMenu();
+  const opslag = getOpslag();
+  const mode = getOpslagMode();
+  const payload = { opslag_pct: mode === 'pct' ? opslag : 0, opslag_eur: mode === 'eur' ? opslag : 0, opslag_mode: mode, menu };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  downloadBlob(blob, `snack-menu-${todayFilename()}.json`);
+}
+
+function exportCSV() {
+  const menu = getMenu();
+  const opslag = getOpslag();
+  const lines = ['nr,categorie,artikel,basisprijs,verkoopprijs'];
+  menu.forEach(item => {
+    const vp = applyOpslag(item.price, opslag);
+    lines.push(`${item.nr},"${item.cat}","${item.name}",${item.price.toFixed(2)},${vp.toFixed(2)}`);
+  });
+  const blob = new Blob([lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+  downloadBlob(blob, `snack-menu-${todayFilename()}.csv`);
+}
+
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 500);
+}
+
+function todayFilename() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+// ── Import ────────────────────────────────────────────────────────────────
+
+function handleImport(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  event.target.value = '';
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const content = e.target.result;
+    try {
+      if (file.name.endsWith('.json')) {
+        importJSON(content);
+      } else if (file.name.endsWith('.csv')) {
+        importCSV(content);
+      } else {
+        alert('Onbekend bestandstype. Gebruik een .json of .csv bestand.');
+      }
+    } catch (err) {
+      alert('Fout bij importeren: ' + err.message);
+    }
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function importJSON(content) {
+  const data = JSON.parse(content);
+  // Support both { menu: [...] } wrapper and plain array
+  const menu = Array.isArray(data) ? data : (data.menu || []);
+  if (!menu.length) throw new Error('Geen producten gevonden in het JSON-bestand.');
+  validateMenu(menu);
+  saveMenu(menu);
+  // Restore opslag mode + value
+  if (data.opslag_mode) {
+    saveOpslagMode(data.opslag_mode);
+    _syncOpslagModeUI(data.opslag_mode);
+    const val = data.opslag_mode === 'eur' ? (data.opslag_eur || 0) : (data.opslag_pct || 0);
+    saveOpslag(val);
+    document.getElementById('opslag-input').value = val;
+  } else if (data.opslag_pct !== undefined) {
+    saveOpslag(data.opslag_pct);
+    document.getElementById('opslag-input').value = data.opslag_pct;
+  }
+  renderProducten();
+  showImportSuccess(menu.length);
+}
+
+function importCSV(content) {
+  const lines = content.trim().split(/\r?\n/);
+  // Skip header row
+  const dataLines = lines.filter((l, i) => i > 0 && l.trim());
+  const menu = dataLines.map((line, i) => {
+    // Parse CSV: nr,"cat","name",price,verkoopprijs
+    const cols = parseCSVLine(line);
+    if (cols.length < 4) throw new Error(`Regel ${i+2} heeft te weinig kolommen.`);
+    const price = parseFloat(cols[3]);
+    if (isNaN(price)) throw new Error(`Ongeldige prijs op regel ${i+2}: "${cols[3]}"`);
+    return {
+      nr: parseInt(cols[0]) || (i + 1),
+      cat: cols[1].trim(),
+      name: cols[2].trim(),
+      price: price,
+    };
+  });
+  if (!menu.length) throw new Error('Geen producten gevonden in het CSV-bestand.');
+  validateMenu(menu);
+  saveMenu(menu);
+  renderProducten();
+  showImportSuccess(menu.length);
+}
+
+function parseCSVLine(line) {
+  const result = [];
+  let cur = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') {
+      inQuotes = !inQuotes;
+    } else if (ch === ',' && !inQuotes) {
+      result.push(cur);
+      cur = '';
+    } else {
+      cur += ch;
+    }
+  }
+  result.push(cur);
+  return result;
+}
+
+function validateMenu(menu) {
+  for (const item of menu) {
+    if (!item.name || typeof item.name !== 'string') throw new Error('Artikel mist een naam.');
+    if (typeof item.price !== 'number' || isNaN(item.price) || item.price < 0)
+      throw new Error(`Ongeldige prijs voor "${item.name}".`);
+    if (!item.cat || typeof item.cat !== 'string') throw new Error(`Artikel "${item.name}" mist een categorie.`);
+  }
+}
+
+function showImportSuccess(count) {
+  showToast(`✓ ${count} producten geïmporteerd`);
+}
+
+// ── Reset naar origineel ──────────────────────────────────────────────────
+
+function resetMenu() {
+  if (!confirm('Weet je zeker dat je het menu wilt resetten naar de originele lijst?\n\nAangepaste producten en prijzen gaan verloren.')) return;
+  localStorage.removeItem('snack_menu');
+  localStorage.removeItem('snack_opslag');
+  localStorage.removeItem('snack_opslag_mode');
+  document.getElementById('opslag-input').value = 0;
+  document.getElementById('opslag-badge').textContent = 'Geen opslag';
+  _syncOpslagModeUI('pct');
+  renderProducten();
+}
+
+// ── Chat API Key beheer ────────────────────────────────────────────────────
+
+const CHAT_API_KEY_STORAGE = 'snack_api_key';
+
+function loadAdminApiKeyStatus() {
+  const key = localStorage.getItem(CHAT_API_KEY_STORAGE) || '';
+  const statusEl = document.getElementById('apikey-status');
+  const removeBtn = document.getElementById('apikey-remove-btn');
+  const input = document.getElementById('admin-api-key-input');
+  if (key) {
+    statusEl.innerHTML = `<span style="color:var(--green);">✓ API key opgeslagen</span> — begint met <code style="font-size:.8rem;">${key.substring(0, 16)}…</code>`;
+    if (removeBtn) removeBtn.style.display = '';
+    if (input) input.placeholder = '(vervang huidige key)';
+  } else {
+    statusEl.textContent = 'Geen API key ingesteld — chat-assistent is niet beschikbaar voor klanten.';
+    statusEl.style.color = 'var(--text-muted)';
+    if (removeBtn) removeBtn.style.display = 'none';
+    if (input) input.placeholder = 'sk-ant-api03-…';
+  }
+}
+
+function saveAdminApiKey() {
+  const val = (document.getElementById('admin-api-key-input').value || '').trim();
+  if (!val) {
+    document.getElementById('admin-api-key-input').focus();
+    return;
+  }
+  localStorage.setItem(CHAT_API_KEY_STORAGE, val);
+  document.getElementById('admin-api-key-input').value = '';
+  loadAdminApiKeyStatus();
+  showToast('✓ API key opgeslagen');
+}
+
+function removeAdminApiKey() {
+  if (!confirm('Weet je zeker dat je de API key wilt verwijderen? De chat-assistent wordt dan uitgeschakeld voor klanten.')) return;
+  localStorage.removeItem(CHAT_API_KEY_STORAGE);
+  loadAdminApiKeyStatus();
+  showToast('API key verwijderd');
+}
+
+function toggleAdminKeyVisibility() {
+  const inp = document.getElementById('admin-api-key-input');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+
+// ── SMTPeter e-mail instellingen ───────────────────────────────────────────
+
+const SMTPETER_KEY_STORAGE  = 'snack_smtpeter_key';
+const SMTPETER_FROM_STORAGE = 'snack_smtpeter_from';
+const SMTPETER_FROMNAME_STORAGE = 'snack_smtpeter_fromname';
+
+function loadSmtpeterStatus() {
+  const key      = localStorage.getItem(SMTPETER_KEY_STORAGE) || '';
+  const from     = localStorage.getItem(SMTPETER_FROM_STORAGE) || '';
+  const fromName = localStorage.getItem(SMTPETER_FROMNAME_STORAGE) || '';
+  const statusEl  = document.getElementById('smtpeter-status');
+  const removeBtn = document.getElementById('smtpeter-remove-btn');
+  const keyInput  = document.getElementById('smtpeter-key-input');
+  const fromInput = document.getElementById('smtpeter-from-input');
+  const nameInput = document.getElementById('smtpeter-fromname-input');
+
+  if (from) fromInput.value = from;
+  if (fromName) nameInput.value = fromName;
+
+  if (key && from) {
+    statusEl.innerHTML = `<span style="color:var(--green);">✓ SMTPeter ingesteld</span> — mails worden verstuurd vanuit <strong>${escapeAdminHtml(from)}</strong>`;
+    if (removeBtn) removeBtn.style.display = '';
+    if (keyInput) keyInput.placeholder = '(vervang huidige key)';
+  } else {
+    statusEl.textContent = key ? 'API key ingesteld maar afzenderadres ontbreekt nog.' : 'Nog niet ingesteld — e-mailbevestigingen zijn uitgeschakeld.';
+    statusEl.style.color = 'var(--text-muted)';
+    if (removeBtn) removeBtn.style.display = 'none';
+  }
+}
+
+function saveSmtpeterSettings() {
+  const key      = (document.getElementById('smtpeter-key-input').value || '').trim();
+  const from     = (document.getElementById('smtpeter-from-input').value || '').trim();
+  const fromName = (document.getElementById('smtpeter-fromname-input').value || '').trim();
+
+  if (!from) {
+    document.getElementById('smtpeter-from-input').focus();
+    showToast('⚠ Vul een afzenderadres in', 'error');
+    return;
+  }
+  if (key) localStorage.setItem(SMTPETER_KEY_STORAGE, key);
+  localStorage.setItem(SMTPETER_FROM_STORAGE, from);
+  localStorage.setItem(SMTPETER_FROMNAME_STORAGE, fromName);
+  document.getElementById('smtpeter-key-input').value = '';
+  loadSmtpeterStatus();
+  showToast('✓ SMTPeter instellingen opgeslagen');
+}
+
+function removeSmtpeterSettings() {
+  if (!confirm('Weet je zeker dat je de SMTPeter instellingen wilt verwijderen? E-mailbevestigingen worden dan uitgeschakeld.')) return;
+  localStorage.removeItem(SMTPETER_KEY_STORAGE);
+  localStorage.removeItem(SMTPETER_FROM_STORAGE);
+  localStorage.removeItem(SMTPETER_FROMNAME_STORAGE);
+  document.getElementById('smtpeter-from-input').value = '';
+  document.getElementById('smtpeter-fromname-input').value = '';
+  loadSmtpeterStatus();
+  showToast('SMTPeter instellingen verwijderd');
+}
+
+function toggleSmtpeterKeyVisibility() {
+  const inp = document.getElementById('smtpeter-key-input');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+
+// ── SMTP Log ────────────────────────────────────────────────────────────────
+
+const SMTP_LOG_STORAGE = 'snack_smtp_log';
+const SMTP_LOG_MAX     = 50; // maximaal aantal entries bewaren
+
+function getSmtpLog() {
+  try { return JSON.parse(localStorage.getItem(SMTP_LOG_STORAGE) || '[]'); } catch { return []; }
+}
+
+function saveSmtpLog(entries) {
+  localStorage.setItem(SMTP_LOG_STORAGE, JSON.stringify(entries.slice(-SMTP_LOG_MAX)));
+}
+
+function addSmtpLogEntry(entry) {
+  const log = getSmtpLog();
+  log.push(entry);
+  saveSmtpLog(log);
+  renderSmtpLog();
+}
+
+function renderSmtpLog() {
+  const panel     = document.getElementById('smtpeter-log');
+  const exportBtn = document.getElementById('smtpeter-log-export-btn');
+  const clearBtn  = document.getElementById('smtpeter-log-clear-btn');
+  const log       = getSmtpLog();
+
+  if (!panel) return;
+
+  if (!log.length) {
+    panel.innerHTML = '<span class="smtp-log-empty">Nog geen verzendpogingen — log verschijnt hier na de eerste testmail.</span>';
+    if (exportBtn) exportBtn.style.display = 'none';
+    if (clearBtn)  clearBtn.style.display  = 'none';
+    return;
+  }
+
+  if (exportBtn) exportBtn.style.display = '';
+  if (clearBtn)  clearBtn.style.display  = '';
+
+  // Nieuwste bovenaan
+  panel.innerHTML = [...log].reverse().map((e, idx) => {
+    const id      = `smtp-log-${idx}`;
+    const badgeCls = e.ok ? 'ok' : (e.type === 'network' ? 'err' : 'err');
+    const badgeTxt = e.ok ? '✓ OK' : '✗ FOUT';
+    const subject  = escapeAdminHtml(e.subject || '—');
+    const time     = escapeAdminHtml(e.timestamp || '');
+
+    // Detail regels opbouwen
+    let detail = '';
+
+    detail += `<span class="log-section-title">Tijdstip</span>`;
+    detail += `<span class="log-value">${escapeAdminHtml(e.timestamp)}</span>`;
+
+    detail += `<span class="log-section-title">Ontvanger</span>`;
+    detail += `<span class="log-value">${escapeAdminHtml(e.to)}</span>`;
+
+    detail += `<span class="log-section-title">Afzender</span>`;
+    detail += `<span class="log-value">${escapeAdminHtml(e.from)}</span>`;
+
+    detail += `<span class="log-section-title">Onderwerp</span>`;
+    detail += `<span class="log-value">${escapeAdminHtml(e.subject)}</span>`;
+
+    detail += `<span class="log-section-title">HTTP Status</span>`;
+    detail += `<span class="log-value ${e.ok ? 'ok' : 'err'}">${escapeAdminHtml(String(e.httpStatus || '—'))}</span>`;
+
+    if (e.responseRaw !== undefined) {
+      detail += `<span class="log-section-title">Ruwe response van SMTPeter</span>`;
+      detail += `<span class="log-value ${e.ok ? 'ok' : 'err'}">${escapeAdminHtml(e.responseRaw)}</span>`;
+    }
+
+    if (e.errorType) {
+      detail += `<span class="log-section-title">Fouttype</span>`;
+      detail += `<span class="log-value err">${escapeAdminHtml(e.errorType)}</span>`;
+    }
+
+    if (e.errorMessage) {
+      detail += `<span class="log-section-title">Foutmelding</span>`;
+      detail += `<span class="log-value err">${escapeAdminHtml(e.errorMessage)}</span>`;
+    }
+
+    if (e.requestBody) {
+      detail += `<span class="log-section-title">Verstuurde payload (JSON)</span>`;
+      detail += `<span class="log-value">${escapeAdminHtml(e.requestBody)}</span>`;
+    }
+
+    return `
+      <div class="smtp-log-entry" id="${id}">
+        <div class="smtp-log-header" onclick="toggleSmtpLogEntry('${id}')">
+          <span class="smtp-log-badge ${badgeCls}">${badgeTxt}</span>
+          <span class="smtp-log-time">${time}</span>
+          <span class="smtp-log-subject">${subject}</span>
+          <span class="smtp-log-toggle">▼ details</span>
+        </div>
+        <div class="smtp-log-detail" id="${id}-detail">${detail}</div>
+      </div>`;
+  }).join('');
+}
+
+function toggleSmtpLogEntry(id) {
+  const detail = document.getElementById(`${id}-detail`);
+  const toggle = document.querySelector(`#${id} .smtp-log-toggle`);
+  if (!detail) return;
+  const open = detail.classList.toggle('open');
+  if (toggle) toggle.textContent = open ? '▲ inklappen' : '▼ details';
+}
+
+function clearSmtpLog() {
+  if (!confirm('Weet je zeker dat je het volledige verzuurlog wilt wissen?')) return;
+  localStorage.removeItem(SMTP_LOG_STORAGE);
+  renderSmtpLog();
+  showToast('Log gewist');
+}
+
+function exportSmtpLog() {
+  const log  = getSmtpLog();
+  const lines = log.map(e => [
+    e.timestamp,
+    e.ok ? 'OK' : 'FOUT',
+    e.httpStatus || '',
+    e.to,
+    e.from,
+    e.subject,
+    e.errorType || '',
+    e.errorMessage || '',
+    e.responseRaw || '',
+  ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(','));
+
+  const csv  = ['Tijdstip,Status,HTTP,Ontvanger,Afzender,Onderwerp,Fouttype,Foutmelding,SMTPeter response', ...lines].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `smtp-log-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ── Testmail versturen ──────────────────────────────────────────────────────
+
+async function testSmtpeterMail() {
+  const apiKey   = localStorage.getItem(SMTPETER_KEY_STORAGE) || '';
+  const fromAddr = localStorage.getItem(SMTPETER_FROM_STORAGE) || '';
+  const fromName = localStorage.getItem(SMTPETER_FROMNAME_STORAGE) || '';
+  const toAddr   = (document.getElementById('smtpeter-test-to').value || '').trim();
+
+  const resultEl = document.getElementById('smtpeter-test-result');
+  const btn      = document.getElementById('smtpeter-test-btn');
+
+  // Validatie (wordt niet gelogd — nog geen API aanroep)
+  if (!apiKey) {
+    resultEl.innerHTML = '<span style="color:var(--red);">❌ Geen API key ingesteld. Sla eerst de instellingen op.</span>';
+    return;
+  }
+  if (!fromAddr) {
+    resultEl.innerHTML = '<span style="color:var(--red);">❌ Geen afzenderadres ingesteld. Sla eerst de instellingen op.</span>';
+    return;
+  }
+  if (!toAddr) {
+    document.getElementById('smtpeter-test-to').focus();
+    resultEl.innerHTML = '<span style="color:var(--text-muted);">Vul een ontvanger e-mailadres in.</span>';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = '⏳ Versturen…';
+  resultEl.innerHTML = '<span style="color:var(--text-muted);">Verbinding maken met SMTPeter…</span>';
+
+  const fromField = fromName ? `${fromName} <${fromAddr}>` : fromAddr;
+  const now       = new Date().toLocaleString('nl-NL', { dateStyle: 'short', timeStyle: 'medium' });
+  const subject   = '🧪 Testmail — Snack Bestelsysteem';
+
+  const textBody = `Dit is een testmail vanuit het Snack Bestelsysteem.\n\nVerstuurd op: ${now}\nVan: ${fromField}\nNaar: ${toAddr}\n\nAls je deze mail ontvangen hebt, werken de SMTPeter instellingen correct!`;
+  const htmlBody = `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;color:#222;">
+<div style="background:#e85d04;padding:20px 24px;border-radius:10px 10px 0 0;">
+  <h2 style="color:#fff;margin:0;">&#x1F9EA; Testmail Snack Bestelsysteem</h2>
+</div>
+<div style="background:#f9f9f9;padding:20px 24px;border-radius:0 0 10px 10px;border:1px solid #eee;">
+  <p>&#x2705; Als je deze mail ontvangt, werken de SMTPeter instellingen correct!</p>
+  <table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:.9em;">
+    <tr><td style="padding:6px 0;color:#888;">Verstuurd op</td><td style="padding:6px 0;"><strong>${now}</strong></td></tr>
+    <tr><td style="padding:6px 0;color:#888;">Van</td><td style="padding:6px 0;"><strong>${escapeAdminHtml(fromField)}</strong></td></tr>
+    <tr><td style="padding:6px 0;color:#888;">Naar</td><td style="padding:6px 0;"><strong>${escapeAdminHtml(toAddr)}</strong></td></tr>
+  </table>
+  <p style="color:#888;font-size:.85em;">Dit bericht is automatisch gegenereerd door het Snack Bestelsysteem.</p>
+</div>
+</body></html>`;
+
+  const payload = {
+    recipient: toAddr,
+    from:      fromField,
+    to:        toAddr,
+    subject,
+    text:      textBody,
+    html:      htmlBody,
+  };
+
+  // Basisentry voor log
+  const logEntry = {
+    timestamp:   new Date().toLocaleString('nl-NL', { dateStyle: 'short', timeStyle: 'medium' }),
+    to:          toAddr,
+    from:        fromField,
+    subject,
+    requestBody: JSON.stringify(payload, null, 2),
+    ok:          false,
+  };
+
+  try {
+    const resp = await fetch(
+      `https://www.smtpeter.com/v1/send?access_token=${encodeURIComponent(apiKey)}`,
+      {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify(payload),
+      }
+    );
+
+    logEntry.httpStatus = resp.status;
+
+    // Lees de ruwe response altijd uit
+    const rawText = await resp.text();
+    logEntry.responseRaw = rawText;
+
+    // Probeer te parsen
+    let parsed = null;
+    try { parsed = JSON.parse(rawText); } catch (_) { /* ruwe tekst al opgeslagen */ }
+
+    if (resp.ok) {
+      logEntry.ok = true;
+      resultEl.innerHTML = `<span style="color:var(--green);">✅ Testmail verstuurd naar <strong>${escapeAdminHtml(toAddr)}</strong> — controleer je inbox (en spam).</span>`;
+    } else {
+      // Extraheer zo specifiek mogelijk de foutmelding
+      let errMsg = `HTTP ${resp.status} ${resp.statusText}`;
+      if (parsed) {
+        if (parsed.error)              errMsg = parsed.error;
+        else if (parsed.message)       errMsg = parsed.message;
+        else if (parsed.description)   errMsg = parsed.description;
+        else                           errMsg = JSON.stringify(parsed, null, 2);
+      } else if (rawText) {
+        errMsg = rawText;
+      }
+      logEntry.errorType    = `HTTP ${resp.status}`;
+      logEntry.errorMessage = errMsg;
+      resultEl.innerHTML    = `<span style="color:var(--red);">❌ <strong>HTTP ${resp.status}</strong> — ${escapeAdminHtml(errMsg)}</span>`;
+    }
+
+  } catch (e) {
+    logEntry.errorType    = 'Netwerkfout';
+    logEntry.errorMessage = e.message;
+    logEntry.responseRaw  = e.stack || e.message;
+    resultEl.innerHTML    = `<span style="color:var(--red);">❌ Netwerkfout: <code style="font-size:.85em;">${escapeAdminHtml(e.message)}</code></span>`;
+  } finally {
+    btn.disabled    = false;
+    btn.textContent = '📨 Verstuur testmail';
+    addSmtpLogEntry(logEntry);
+  }
+}
+
+function escapeAdminHtml(str) {
+  return String(str || '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// ── Thema ──────────────────────────────────────────────────────────────────
+function _applyTheme(theme) {
+  document.documentElement.classList.toggle('light', theme === 'light');
+  const btn = document.getElementById('theme-toggle-btn');
+  if (btn) btn.textContent = theme === 'light' ? '🌙' : '☀️';
+}
+
+function toggleTheme() {
+  const current = localStorage.getItem('snack_theme') || 'dark';
+  const next = current === 'dark' ? 'light' : 'dark';
+  localStorage.setItem('snack_theme', next);
+  _applyTheme(next);
+}
+
+_applyTheme(localStorage.getItem('snack_theme') || 'dark');
+
+// ── Init ──────────────────────────────────────────────────────────────────
+
+// Always start with locked sections, then show overlay if not logged in
+setLockedSections(true);
+
+if (isLoggedIn()) {
+  document.getElementById('login-overlay').style.display = 'none';
+  setLockedSections(false);
+} else {
+  document.getElementById('login-overlay').style.display = 'flex';
+  setTimeout(() => document.getElementById('login-password').focus(), 100);
+}
+
+loadQRPreview();
+// Herstel opslag instelling
+_syncOpslagModeUI(getOpslagMode());
+document.getElementById('opslag-input').value = getOpslag();
+updateOpslag();
+renderProducten();
+renderOrders();
+loadAdminApiKeyStatus();
+loadSmtpeterStatus();
+renderSmtpLog();
+</script>
+</body>
+</html>
