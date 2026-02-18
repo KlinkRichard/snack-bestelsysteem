@@ -199,28 +199,6 @@
       margin-left: 4px;
     }
 
-    .modal-email-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      color: var(--text);
-      border-radius: var(--radius);
-      padding: 10px 20px;
-      font-size: .9rem;
-      font-weight: 600;
-      font-family: inherit;
-      cursor: pointer;
-      margin-top: 8px;
-      transition: all .2s;
-      width: 100%;
-      justify-content: center;
-      height: 44px;
-    }
-    .modal-email-btn:hover:not(:disabled) { border-color: var(--blue); color: var(--blue); }
-    .modal-email-btn:disabled { opacity: .6; cursor: default; }
-
     /* Search + filter */
     .controls {
       display: flex;
@@ -1221,10 +1199,6 @@
         Afdeling
         <input type="text" id="user-dept" placeholder="Jouw afdeling" autocomplete="off" />
       </label>
-      <label>
-        E-mail <span class="user-bar-optional">(optioneel)</span>
-        <input type="email" id="user-email" placeholder="jouw@email.nl" autocomplete="email" />
-      </label>
     </div>
 
     <!-- Search + filters -->
@@ -1354,10 +1328,6 @@
       <div class="qr-label">💳 Scan om te betalen</div>
       <img id="modal-qr-img" src="" alt="Betaal QR code" />
       <div class="qr-sub">Tikkie / PayConiq / iDEAL</div>
-    </div>
-
-    <div id="modal-email-section" style="display:none; margin-top:4px;">
-      <button class="modal-email-btn" id="modal-email-btn" onclick="triggerConfirmationEmail()">📧 Stuur bevestiging naar mij</button>
     </div>
 
     <button class="modal-close" onclick="closeModal()">Sluiten</button>
@@ -1721,7 +1691,6 @@ function submitOrder() {
 
   const name = document.getElementById('user-name').value.trim();
   const dept = document.getElementById('user-dept').value.trim();
-  const email = document.getElementById('user-email').value.trim();
   if (!name) {
     document.getElementById('user-name').focus();
     document.getElementById('user-name').style.borderColor = 'var(--red)';
@@ -1748,7 +1717,6 @@ function submitOrder() {
     date: today,
     name,
     dept,
-    email,
     items,
     fooi,
     total,
@@ -1760,7 +1728,6 @@ function submitOrder() {
   // Build modal summary
   let summary = `<strong>Naam:</strong> ${escapeHtml(name)}<br>`;
   if (dept) summary += `<strong>Afdeling:</strong> ${escapeHtml(dept)}<br>`;
-  if (email) summary += `<strong>E-mail:</strong> ${escapeHtml(email)}<br>`;
   summary += '<br>';
   items.forEach(it => {
     summary += `${it.qty}× ${escapeHtml(it.name)} — ${fmt(it.price * it.qty)}<br>`;
@@ -1770,77 +1737,14 @@ function submitOrder() {
   document.getElementById('modal-summary').innerHTML = summary;
   document.getElementById('modal-total').textContent = 'Totaal: ' + fmt(total);
 
-  // Toon e-mailknop als gebruiker een adres heeft ingevuld
-  const emailSection = document.getElementById('modal-email-section');
-  const emailBtn = document.getElementById('modal-email-btn');
-  if (email) {
-    // Sla het huidige order op zodat triggerConfirmationEmail() het kan gebruiken
-    window._lastOrder = order;
-    const smtpConfigured = getSmtpeterKey() && getSmtpeterFrom();
-    if (smtpConfigured) {
-      emailBtn.textContent = '📧 Stuur bevestiging naar mij';
-      emailBtn.disabled = false;
-    } else {
-      // Fallback: mailto als SMTPeter niet geconfigureerd is
-      emailBtn.textContent = '📧 Open in e-mailprogramma';
-      emailBtn.disabled = false;
-    }
-    emailSection.style.display = 'block';
-  } else {
-    emailSection.style.display = 'none';
-    window._lastOrder = null;
-  }
-
   showPaymentQR();
   document.getElementById('modal').classList.add('open');
   renderOverview();
 }
 
-async function triggerConfirmationEmail() {
-  const order = window._lastOrder;
-  if (!order || !order.email) return;
-
-  const btn = document.getElementById('modal-email-btn');
-  const smtpKey  = getSmtpeterKey();
-  const smtpFrom = getSmtpeterFrom();
-
-  if (smtpKey && smtpFrom) {
-    // Verstuur via SMTPeter
-    btn.disabled = true;
-    btn.textContent = '⏳ Versturen…';
-    const result = await sendConfirmationEmail(order);
-    if (result.ok) {
-      btn.textContent = '✅ Bevestiging verstuurd!';
-      btn.style.color = 'var(--green)';
-      btn.style.borderColor = 'var(--green)';
-    } else {
-      btn.disabled = false;
-      btn.textContent = '❌ Mislukt — probeer opnieuw';
-      btn.style.color = 'var(--red)';
-      btn.style.borderColor = 'var(--red)';
-      console.error('SMTPeter fout:', result.reason);
-    }
-  } else {
-    // Fallback: open mailto in e-mailprogramma
-    let body = `Beste ${order.name},\n\nHier is de bevestiging van jouw snackbestelling:\n\n`;
-    if (order.dept) body += `Afdeling: ${order.dept}\n`;
-    body += `Datum: ${order.date}\n\n--- Bestelling ---\n`;
-    order.items.forEach(it => {
-      body += `${it.qty}x ${it.name}  ${fmt(it.price * it.qty)}\n`;
-    });
-    if (order.fooi > 0) body += `\nFooi: ${fmt(order.fooi)}\n`;
-    body += `\nTotaal: ${fmt(order.total)}\n\nEet smakelijk! 🍟`;
-    const subject = encodeURIComponent(`Snack bestelling bevestiging — ${order.date}`);
-    window.location.href = `mailto:${encodeURIComponent(order.email)}?subject=${subject}&body=${encodeURIComponent(body)}`;
-  }
-}
-
 function closeModal() {
   document.getElementById('modal').classList.remove('open');
   clearCart();
-  // Reset e-mailknop voor volgende bestelling
-  const btn = document.getElementById('modal-email-btn');
-  if (btn) { btn.disabled = false; btn.textContent = '📧 Stuur bevestiging naar mij'; btn.style.color = ''; btn.style.borderColor = ''; }
 }
 
 function scrollToCart() {
@@ -1964,78 +1868,6 @@ const CHAT_API_KEY_STORAGE = 'snack_api_key';
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
 const CHAT_MODEL = 'claude-haiku-4-5-20251001';
 
-// ── SMTPeter instellingen (gezet door beheerder) ───────────────────────────
-const SMTPETER_KEY_STORAGE      = 'snack_smtpeter_key';
-const SMTPETER_FROM_STORAGE     = 'snack_smtpeter_from';
-const SMTPETER_FROMNAME_STORAGE = 'snack_smtpeter_fromname';
-const SMTPETER_API_URL          = 'https://www.smtpeter.com/v1/send';
-
-function getSmtpeterKey()      { return localStorage.getItem(SMTPETER_KEY_STORAGE) || ''; }
-function getSmtpeterFrom()     { return localStorage.getItem(SMTPETER_FROM_STORAGE) || ''; }
-function getSmtpeterFromName() { return localStorage.getItem(SMTPETER_FROMNAME_STORAGE) || ''; }
-
-async function sendConfirmationEmail(order) {
-  const apiKey   = getSmtpeterKey();
-  const fromAddr = getSmtpeterFrom();
-  if (!apiKey || !fromAddr || !order.email) return { ok: false, reason: 'niet_geconfigureerd' };
-
-  const fromName = getSmtpeterFromName();
-  const fromField = fromName ? `${fromName} <${fromAddr}>` : fromAddr;
-
-  // Plain-text body
-  let textBody = `Beste ${order.name},\n\nHier is de bevestiging van jouw snackbestelling:\n\n`;
-  if (order.dept) textBody += `Afdeling: ${order.dept}\n`;
-  textBody += `Datum: ${order.date}\n\n--- Bestelling ---\n`;
-  order.items.forEach(it => {
-    textBody += `${it.qty}x ${it.name}  ${fmt(it.price * it.qty)}\n`;
-  });
-  if (order.fooi > 0) textBody += `\nFooi: ${fmt(order.fooi)}\n`;
-  textBody += `\nTotaal: ${fmt(order.total)}\n\nEet smakelijk! 🍟\n`;
-
-  // HTML body
-  let itemRows = order.items.map(it =>
-    `<tr><td style="padding:4px 8px;">${it.qty}×</td><td style="padding:4px 8px;">${escapeHtml(it.name)}</td><td style="padding:4px 8px;text-align:right;">${fmt(it.price * it.qty)}</td></tr>`
-  ).join('');
-  if (order.fooi > 0) {
-    itemRows += `<tr><td colspan="2" style="padding:4px 8px;color:#888;">🪙 Fooi</td><td style="padding:4px 8px;text-align:right;">${fmt(order.fooi)}</td></tr>`;
-  }
-  const htmlBody = `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;color:#222;">
-<h2 style="color:#e85d04;">&#x2705; Bestelling bevestigd</h2>
-<p>Beste <strong>${escapeHtml(order.name)}</strong>,</p>
-<p>Bedankt voor je snackbestelling! Hieronder vind je de samenvatting:</p>
-${order.dept ? `<p><strong>Afdeling:</strong> ${escapeHtml(order.dept)}</p>` : ''}
-<p><strong>Datum:</strong> ${escapeHtml(order.date)}</p>
-<table style="width:100%;border-collapse:collapse;margin:16px 0;background:#f9f9f9;border-radius:8px;">
-${itemRows}
-<tr style="border-top:2px solid #e85d04;font-weight:bold;">
-  <td colspan="2" style="padding:8px;">Totaal</td>
-  <td style="padding:8px;text-align:right;color:#e85d04;">${fmt(order.total)}</td>
-</tr>
-</table>
-<p style="color:#888;font-size:.85em;">Eet smakelijk! &#x1F35F;</p>
-</body></html>`;
-
-  try {
-    const resp = await fetch(`${SMTPETER_API_URL}?access_token=${encodeURIComponent(apiKey)}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        recipient: order.email,
-        from:      fromField,
-        to:        order.email,
-        subject:   `Snack bestelling bevestiging — ${order.date}`,
-        text:      textBody,
-        html:      htmlBody,
-      }),
-    });
-    if (resp.ok) return { ok: true };
-    const errText = await resp.text();
-    return { ok: false, reason: errText };
-  } catch (e) {
-    return { ok: false, reason: e.message };
-  }
-}
-
 let chatHistory = [];
 let chatOpen = false;
 let chatStreaming = false;
@@ -2155,9 +1987,7 @@ REGELS:
 - Na het invullen, vraag of de gebruiker wil bestellen of nog iets wil wijzigen
 - Je mag ook menu-vragen beantwoorden zonder tools (bijv. "wat is goedkoop?", "wat zit er in de snacks?")
 - Wees beknopt en vriendelijk
-- Gebruik scroll_to_cart na het toevoegen van items zodat de gebruiker ze kan zien
-- E-mail is OPTIONEEL: vraag er alleen naar als de gebruiker zelf over een bevestiging begint, of vraag het één keer aan het einde vlak voor de bestelling ("Wil je een bevestiging per e-mail? Zo ja, wat is je adres?")
-- Gebruik set_email als de gebruiker een e-mailadres geeft`;
+- Gebruik scroll_to_cart na het toevoegen van items zodat de gebruiker ze kan zien`;
 }
 
 // ── Tools ──────────────────────────────────────────────────────────────────
@@ -2180,15 +2010,6 @@ function buildChatTools() {
         type: 'object',
         properties: { dept: { type: 'string', description: 'Afdeling of team' } },
         required: ['dept'],
-      },
-    },
-    {
-      name: 'set_email',
-      description: 'Vul het e-mailadres van de besteller in voor de bevestigingsmail (optioneel).',
-      input_schema: {
-        type: 'object',
-        properties: { email: { type: 'string', description: 'E-mailadres voor bevestiging' } },
-        required: ['email'],
       },
     },
     {
@@ -2250,10 +2071,6 @@ function executeChatTool(name, input) {
     case 'set_dept': {
       document.getElementById('user-dept').value = input.dept || '';
       return `Afdeling ingesteld op "${input.dept}"`;
-    }
-    case 'set_email': {
-      document.getElementById('user-email').value = input.email || '';
-      return `E-mailadres ingesteld op "${input.email}"`;
     }
     case 'add_item': {
       const qty = input.qty || 1;
