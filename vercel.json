@@ -1,11 +1,6 @@
 {
   "version": 2,
   "name": "snack-bestelsysteem",
-  "cleanUrls": true,
-  "rewrites": [
-    { "source": "/bestellen", "destination": "/snack-order.html" },
-    { "source": "/beheer",    "destination": "/snack-admin.html" }
-  ],
   "headers": [
     {
       "source": "/(.*)",
