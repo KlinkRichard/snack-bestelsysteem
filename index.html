@@ -206,6 +206,22 @@
     // ── SSO Config ──────────────────────────────────────────────────────────
     var _ssoConfig = null;
     var _msalInstance = null;
+    var SSO_CACHE_KEY = 'snack_sso_config';
+
+    // Try to init MSAL immediately from cached config (needed for redirect flow)
+    function tryInitMSALFromCache() {
+      if (!window.msal) return;
+      try {
+        var cached = JSON.parse(sessionStorage.getItem(SSO_CACHE_KEY) || 'null');
+        if (cached && cached.enabled && cached.clientId && cached.tenantId) {
+          _ssoConfig = cached;
+          doInitMSAL();
+        }
+      } catch (e) { /* ignore */ }
+    }
+
+    // Call immediately so handleRedirectPromise() runs before the hash is lost
+    tryInitMSALFromCache();
 
     async function loadSSOConfig() {
       try {
@@ -217,6 +233,8 @@
           tenantId: data.ssoTenantId || '',
           allowedDomain: (data.ssoAllowedDomain || '').toLowerCase()
         };
+        // Cache for next page load (redirect flow needs it immediately)
+        sessionStorage.setItem(SSO_CACHE_KEY, JSON.stringify(_ssoConfig));
       } catch (e) {
         console.warn('Kon SSO config niet laden:', e);
         _ssoConfig = { enabled: false, clientId: '', tenantId: '', allowedDomain: '' };
@@ -229,19 +247,22 @@
       if (_ssoConfig.enabled && _ssoConfig.clientId && _ssoConfig.tenantId) {
         ssoSection.style.display = 'block';
         subtitle.textContent = 'Log in met je Microsoft-account of wachtwoord';
-        initMSAL();
+        // Init MSAL if not already done from cache
+        if (!_msalInstance) doInitMSAL();
       } else {
         ssoSection.style.display = 'none';
         subtitle.textContent = 'Voer het wachtwoord in om verder te gaan';
+        sessionStorage.removeItem(SSO_CACHE_KEY);
       }
     }
 
-    function initMSAL() {
+    function doInitMSAL() {
       if (!_ssoConfig || !_ssoConfig.clientId || !_ssoConfig.tenantId) return;
       if (!window.msal) {
         console.warn('MSAL.js niet geladen');
         return;
       }
+      if (_msalInstance) return; // already initialized
 
       try {
         var msalConfig = {
@@ -258,7 +279,7 @@
 
         _msalInstance = new msal.PublicClientApplication(msalConfig);
 
-        // Handle redirect response (if using redirect flow)
+        // Handle redirect response — this MUST run on page load to catch the redirect back from Microsoft
         _msalInstance.handleRedirectPromise().then(function(response) {
           if (response && response.account) {
             handleMicrosoftResponse(response.account);
