@@ -1,10 +1,10 @@
 #!/usr/bin/env swift
 
 import Foundation
+import AppKit
 import CoreGraphics
 import CoreText
 import ImageIO
-import UniformTypeIdentifiers
 
 let size = 1024
 let width = size
@@ -114,7 +114,7 @@ guard let image = context.makeImage() else {
 let outputPath = CommandLine.arguments.count > 1 ? CommandLine.arguments[1] : "appicon-1024.png"
 let url = URL(fileURLWithPath: outputPath)
 
-guard let dest = CGImageDestinationCreateWithURL(url as CFURL, UTType.png.identifier as CFString, 1, nil) else {
+guard let dest = CGImageDestinationCreateWithURL(url as CFURL, "public.png" as CFString, 1, nil) else {
     print("Failed to create image destination")
     exit(1)
 }
