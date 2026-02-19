@@ -248,7 +248,7 @@
           auth: {
             clientId: _ssoConfig.clientId,
             authority: 'https://login.microsoftonline.com/' + _ssoConfig.tenantId,
-            redirectUri: window.location.origin + '/index.html',
+            redirectUri: window.location.origin + '/',
           },
           cache: {
             cacheLocation: 'sessionStorage',
@@ -287,23 +287,14 @@
           prompt: 'select_account'
         };
 
-        var response = await _msalInstance.loginPopup(loginRequest);
-
-        if (response && response.account) {
-          handleMicrosoftResponse(response.account);
-        }
+        // Use redirect instead of popup (popups are often blocked by browsers)
+        await _msalInstance.loginRedirect(loginRequest);
+        // Page will redirect to Microsoft — handleRedirectPromise() catches the return
       } catch (err) {
         console.error('Microsoft login error:', err);
         var errorEl = document.getElementById('pw-error');
+        errorEl.textContent = 'Fout bij Microsoft login: ' + (err.errorMessage || err.message || 'Onbekende fout');
 
-        if (err.errorCode === 'user_cancelled' || err.errorMessage && err.errorMessage.indexOf('cancelled') !== -1) {
-          errorEl.textContent = 'Inloggen geannuleerd.';
-        } else if (err.errorCode === 'popup_window_error') {
-          errorEl.textContent = 'Popup geblokkeerd — sta popups toe voor deze site.';
-        } else {
-          errorEl.textContent = 'Fout bij Microsoft login: ' + (err.errorMessage || err.message || 'Onbekende fout');
-        }
-      } finally {
         loginBtn.disabled = false;
         loginBtn.innerHTML = '<svg viewBox="0 0 21 21" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="1" width="9" height="9" fill="#f25022"/><rect x="11" y="1" width="9" height="9" fill="#7fba00"/><rect x="1" y="11" width="9" height="9" fill="#00a4ef"/><rect x="11" y="11" width="9" height="9" fill="#ffb900"/></svg> Inloggen met Microsoft';
       }
