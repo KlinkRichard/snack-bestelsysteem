@@ -850,6 +850,32 @@
     </div>
   </div>
 
+  <!-- ── Section 0: Admin Token (voor server API) ── -->
+  <div class="admin-section" id="section-admin-token">
+    <div class="section-header">
+      <h2>🔐 Server Verbinding</h2>
+    </div>
+    <div class="section-body">
+      <div style="padding:20px 22px;display:flex;flex-direction:column;gap:14px;max-width:520px;">
+        <p style="font-size:.88rem;color:var(--text-muted);line-height:1.6;">
+          Voer het admin token in om QR en API key instellingen op de server op te slaan. Dit token is ingesteld als <code>ADMIN_TOKEN</code> in Vercel.
+        </p>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <div style="position:relative;flex:1;">
+            <input type="password" class="login-input" id="admin-token-input"
+                   placeholder="Voer admin token in..."
+                   style="font-family:monospace;font-size:.85rem;padding-right:44px;"
+                   onkeydown="if(event.key==='Enter')saveAdminToken()" />
+            <button onclick="toggleAdminTokenVisibility()" title="Toon/verberg"
+                    style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1rem;padding:4px;">👁</button>
+          </div>
+          <button class="btn-primary" onclick="saveAdminToken()" style="white-space:nowrap;">💾 Opslaan</button>
+        </div>
+        <div id="admin-token-status" style="font-size:.82rem;"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- ── Section 1: Betaal QR ── -->
   <div class="admin-section" id="section-qr">
     <div class="section-header">
@@ -1171,21 +1197,84 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;');
 }
 
+// ── Admin Token & Server API ──────────────────────────────────────────────
+
+const ADMIN_TOKEN_KEY = 'admin_token';
+
+function getAdminToken() {
+  return localStorage.getItem(ADMIN_TOKEN_KEY) || '';
+}
+
+function saveAdminToken() {
+  const val = (document.getElementById('admin-token-input').value || '').trim();
+  if (!val) { document.getElementById('admin-token-input').focus(); return; }
+  localStorage.setItem(ADMIN_TOKEN_KEY, val);
+  document.getElementById('admin-token-input').value = '';
+  updateAdminTokenStatus();
+  showToast('✓ Admin token opgeslagen');
+}
+
+function toggleAdminTokenVisibility() {
+  const inp = document.getElementById('admin-token-input');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+
+function updateAdminTokenStatus() {
+  const token = getAdminToken();
+  const el = document.getElementById('admin-token-status');
+  if (token) {
+    el.innerHTML = '<span style="color:var(--green);">✓ Token opgeslagen</span> — wijzigingen worden naar de server gestuurd.';
+  } else {
+    el.innerHTML = '<span style="color:var(--text-muted);">Geen token ingesteld — QR en API key worden niet opgeslagen op de server.</span>';
+  }
+}
+
+async function apiCall(method, params) {
+  params = params || {};
+  const token = getAdminToken();
+  const url = new URL('/api/settings', location.origin);
+  if (params.key) url.searchParams.set('key', params.key);
+
+  const opts = {
+    method: method,
+    headers: {},
+  };
+  if (token) {
+    opts.headers['Authorization'] = 'Bearer ' + token;
+  }
+  if (method === 'POST') {
+    opts.headers['Content-Type'] = 'application/json';
+    opts.body = JSON.stringify(params.body);
+  }
+  const resp = await fetch(url, opts);
+  if (!resp.ok) {
+    const err = await resp.json().catch(function() { return {}; });
+    throw new Error(err.error || 'Server fout (' + resp.status + ')');
+  }
+  return resp.json();
+}
+
 // ── QR Management ─────────────────────────────────────────────────────────
 
-function loadQRPreview() {
-  const qr = localStorage.getItem('payment_qr');
+async function loadQRPreview() {
   const area = document.getElementById('qr-preview-area');
   const status = document.getElementById('qr-status');
-
-  if (qr) {
-    area.innerHTML = `<img src="${qr}" alt="Huidige betaal QR code" />`;
-    status.className = 'qr-status active';
-    status.textContent = '● QR code actief — zichtbaar voor klanten';
-  } else {
-    area.innerHTML = `<div class="no-qr"><span>📷</span>Geen QR</div>`;
+  try {
+    const data = await apiCall('GET', { key: 'qr' });
+    const qr = data.qr;
+    if (qr) {
+      area.innerHTML = '<img src="' + escapeHtml(qr) + '" alt="Huidige betaal QR code" />';
+      status.className = 'qr-status active';
+      status.textContent = '● QR code actief — zichtbaar voor klanten';
+    } else {
+      area.innerHTML = '<div class="no-qr"><span>📷</span>Geen QR</div>';
+      status.className = 'qr-status inactive';
+      status.textContent = '● Geen QR code actief';
+    }
+  } catch (err) {
+    area.innerHTML = '<div class="no-qr"><span>⚠</span>Fout bij laden</div>';
     status.className = 'qr-status inactive';
-    status.textContent = '● Geen QR code actief';
+    status.textContent = '● Kon QR niet laden: ' + err.message;
   }
 }
 
@@ -1205,23 +1294,35 @@ function handleQRUpload(event) {
     return;
   }
 
+  if (!getAdminToken()) {
+    alert('Stel eerst een admin token in (sectie "Server Verbinding") voordat je een QR uploadt.');
+    event.target.value = '';
+    return;
+  }
+
   const reader = new FileReader();
-  reader.onload = function(e) {
-    localStorage.setItem('payment_qr', e.target.result);
-    loadQRPreview();
+  reader.onload = async function(e) {
+    try {
+      await apiCall('POST', { body: { qr: e.target.result } });
+      showToast('✓ QR code opgeslagen op server');
+      loadQRPreview();
+    } catch (err) {
+      alert('Fout bij opslaan QR: ' + err.message);
+    }
   };
   reader.readAsDataURL(file);
   event.target.value = '';
 }
 
-function removeQR() {
-  if (!localStorage.getItem('payment_qr')) {
-    alert('Er is geen QR code om te verwijderen.');
-    return;
-  }
+async function removeQR() {
   if (!confirm('Weet je zeker dat je de betaal QR wilt verwijderen? Klanten zien daarna geen betaal QR meer.')) return;
-  localStorage.removeItem('payment_qr');
-  loadQRPreview();
+  try {
+    await apiCall('DELETE', { key: 'qr' });
+    showToast('QR code verwijderd');
+    loadQRPreview();
+  } catch (err) {
+    alert('Fout bij verwijderen QR: ' + err.message);
+  }
 }
 
 // ── Date management ───────────────────────────────────────────────────────
@@ -1993,42 +2094,62 @@ function resetMenu() {
 
 // ── Chat API Key beheer ────────────────────────────────────────────────────
 
-const CHAT_API_KEY_STORAGE = 'snack_api_key';
-
-function loadAdminApiKeyStatus() {
-  const key = localStorage.getItem(CHAT_API_KEY_STORAGE) || '';
+async function loadAdminApiKeyStatus() {
   const statusEl = document.getElementById('apikey-status');
   const removeBtn = document.getElementById('apikey-remove-btn');
   const input = document.getElementById('admin-api-key-input');
-  if (key) {
-    statusEl.innerHTML = `<span style="color:var(--green);">✓ API key opgeslagen</span> — begint met <code style="font-size:.8rem;">${key.substring(0, 16)}…</code>`;
-    if (removeBtn) removeBtn.style.display = '';
-    if (input) input.placeholder = '(vervang huidige key)';
-  } else {
-    statusEl.textContent = 'Geen API key ingesteld — chat-assistent is niet beschikbaar voor klanten.';
-    statusEl.style.color = 'var(--text-muted)';
-    if (removeBtn) removeBtn.style.display = 'none';
-    if (input) input.placeholder = 'sk-ant-api03-…';
+  try {
+    const data = await apiCall('GET');
+    if (data.apiKey) {
+      // Admin with token sees the full key
+      statusEl.innerHTML = '<span style="color:var(--green);">✓ API key opgeslagen</span> — begint met <code style="font-size:.8rem;">' + escapeHtml(data.apiKey.substring(0, 16)) + '…</code>';
+      if (removeBtn) removeBtn.style.display = '';
+      if (input) input.placeholder = '(vervang huidige key)';
+    } else if (data.hasApiKey) {
+      statusEl.innerHTML = '<span style="color:var(--green);">✓ API key opgeslagen</span> op server';
+      if (removeBtn) removeBtn.style.display = '';
+      if (input) input.placeholder = '(vervang huidige key)';
+    } else {
+      statusEl.textContent = 'Geen API key ingesteld — chat-assistent is niet beschikbaar voor klanten.';
+      statusEl.style.color = 'var(--text-muted)';
+      if (removeBtn) removeBtn.style.display = 'none';
+      if (input) input.placeholder = 'sk-ant-api03-…';
+    }
+  } catch (err) {
+    statusEl.textContent = 'Fout bij laden: ' + err.message;
+    statusEl.style.color = 'var(--red)';
   }
 }
 
-function saveAdminApiKey() {
+async function saveAdminApiKey() {
   const val = (document.getElementById('admin-api-key-input').value || '').trim();
   if (!val) {
     document.getElementById('admin-api-key-input').focus();
     return;
   }
-  localStorage.setItem(CHAT_API_KEY_STORAGE, val);
-  document.getElementById('admin-api-key-input').value = '';
-  loadAdminApiKeyStatus();
-  showToast('✓ API key opgeslagen');
+  if (!getAdminToken()) {
+    alert('Stel eerst een admin token in (sectie "Server Verbinding").');
+    return;
+  }
+  try {
+    await apiCall('POST', { body: { apiKey: val } });
+    document.getElementById('admin-api-key-input').value = '';
+    loadAdminApiKeyStatus();
+    showToast('✓ API key opgeslagen op server');
+  } catch (err) {
+    alert('Fout bij opslaan API key: ' + err.message);
+  }
 }
 
-function removeAdminApiKey() {
+async function removeAdminApiKey() {
   if (!confirm('Weet je zeker dat je de API key wilt verwijderen? De chat-assistent wordt dan uitgeschakeld voor klanten.')) return;
-  localStorage.removeItem(CHAT_API_KEY_STORAGE);
-  loadAdminApiKeyStatus();
-  showToast('API key verwijderd');
+  try {
+    await apiCall('DELETE', { key: 'apiKey' });
+    loadAdminApiKeyStatus();
+    showToast('API key verwijderd');
+  } catch (err) {
+    alert('Fout bij verwijderen API key: ' + err.message);
+  }
 }
 
 function toggleAdminKeyVisibility() {
@@ -2073,14 +2194,17 @@ if (isLoggedIn()) {
   setTimeout(() => document.getElementById('login-password').focus(), 100);
 }
 
+// Server-gerelateerde UI laden
+updateAdminTokenStatus();
 loadQRPreview();
+loadAdminApiKeyStatus();
+
 // Herstel opslag instelling
 _syncOpslagModeUI(getOpslagMode());
 document.getElementById('opslag-input').value = getOpslag();
 updateOpslag();
 renderProducten();
 renderOrders();
-loadAdminApiKeyStatus();
 </script>
 </body>
 </html>

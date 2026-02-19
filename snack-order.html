@@ -1363,8 +1363,29 @@ function isDateClosed(dateStr) {
   return getClosedDates().includes(dateStr);
 }
 
+// ── Server settings (QR + API key) ──────────────────────────────────────────
+let _cachedQR = null;
+let _cachedApiKey = '';
+
+async function loadServerSettings() {
+  try {
+    const resp = await fetch('/api/settings?key=qr');
+    const qrData = await resp.json();
+    _cachedQR = qrData.qr || null;
+  } catch (e) {
+    console.warn('Kon QR niet laden van server:', e);
+  }
+  try {
+    const resp = await fetch('/api/settings?key=apiKey');
+    const keyData = await resp.json();
+    _cachedApiKey = keyData.apiKey || '';
+  } catch (e) {
+    console.warn('Kon API key niet laden van server:', e);
+  }
+}
+
 function getPaymentQR() {
-  return localStorage.getItem('payment_qr') || null;
+  return _cachedQR;
 }
 
 // ── Menu: laden vanuit localStorage (incl. opslag) ─────────────────────────
@@ -1864,7 +1885,6 @@ function renderOverview() {
 
 // ── Chat Agent ─────────────────────────────────────────────────────────────
 
-const CHAT_API_KEY_STORAGE = 'snack_api_key';
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
 const CHAT_MODEL = 'claude-haiku-4-5-20251001';
 
@@ -1895,7 +1915,7 @@ function toggleChat() {
 // ── API key ────────────────────────────────────────────────────────────────
 
 function getApiKey() {
-  return localStorage.getItem(CHAT_API_KEY_STORAGE) || '';
+  return _cachedApiKey || '';
 }
 
 // ── Init ───────────────────────────────────────────────────────────────────
@@ -2309,10 +2329,14 @@ _applyTheme(localStorage.getItem('snack_theme') || 'dark');
 
 // ── Init ───────────────────────────────────────────────────────────────────
 checkDateStatus();
-showPaymentQR();
 applyFilters();
 renderOverview();
-initChat();
+
+// Laad QR en API key van server, daarna UI updaten
+loadServerSettings().then(function() {
+  showPaymentQR();
+  initChat();
+});
 </script>
 </body>
 </html>
