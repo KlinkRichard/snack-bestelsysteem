@@ -1476,24 +1476,28 @@ const MENU_DEFAULT = [
 ];
 
 // Laad menu (evt. aangepast via admin) en pas opslag toe als verkoopprijs
-function loadMenu() {
-  let base;
+async function loadMenuFromServer() {
   try {
-    const stored = localStorage.getItem('snack_menu');
-    base = stored ? JSON.parse(stored) : MENU_DEFAULT.map(i => ({ ...i }));
-  } catch { base = MENU_DEFAULT.map(i => ({ ...i })); }
-  const opslag = parseFloat(localStorage.getItem('snack_opslag') || '0');
-  if (!opslag) return base;
-  const mode = localStorage.getItem('snack_opslag_mode') || 'pct';
-  return base.map(item => ({
-    ...item,
-    price: mode === 'eur'
-      ? Math.round((item.price + opslag) * 20) / 20
-      : Math.round(item.price * (1 + opslag / 100) * 20) / 20,
-  }));
+    var resp = await fetch('/api/menu');
+    var data = await resp.json();
+    var base = data.menu || MENU_DEFAULT.map(function(i) { return Object.assign({}, i); });
+    var opslag = data.opslag != null ? data.opslag : 0;
+    var mode = data.opslagMode || 'pct';
+    if (!opslag) return base;
+    return base.map(function(item) {
+      return Object.assign({}, item, {
+        price: mode === 'eur'
+          ? Math.round((item.price + opslag) * 20) / 20
+          : Math.round(item.price * (1 + opslag / 100) * 20) / 20,
+      });
+    });
+  } catch (e) {
+    console.warn('Kon menu niet laden van server:', e);
+    return MENU_DEFAULT.map(function(i) { return Object.assign({}, i); });
+  }
 }
 
-const MENU = loadMenu();
+let MENU = MENU_DEFAULT.map(function(i) { return Object.assign({}, i); });
 
 const CATEGORY_LABELS = {
   "Eigen snack": "🍟 Losse items",
@@ -2329,14 +2333,19 @@ _applyTheme(localStorage.getItem('snack_theme') || 'dark');
 
 // ── Init ───────────────────────────────────────────────────────────────────
 checkDateStatus();
-applyFilters();
-renderOverview();
 
-// Laad QR en API key van server, daarna UI updaten
-loadServerSettings().then(function() {
+// Laad alles van server: QR, API key, menu
+(async function() {
+  // QR + API key laden
+  await loadServerSettings();
   showPaymentQR();
   initChat();
-});
+
+  // Menu laden van server
+  MENU = await loadMenuFromServer();
+  applyFilters();
+  renderOverview();
+})();
 </script>
 </body>
 </html>

@@ -1229,10 +1229,11 @@ function updateAdminTokenStatus() {
   }
 }
 
-async function apiCall(method, params) {
+async function apiCall(method, params, path) {
   params = params || {};
+  path = path || '/api/settings';
   const token = getAdminToken();
-  const url = new URL('/api/settings', location.origin);
+  const url = new URL(path, location.origin);
   if (params.key) url.searchParams.set('key', params.key);
 
   const opts = {
@@ -1831,37 +1832,58 @@ const MENU_DEFAULT = [
 
 // ── Menu helpers ──────────────────────────────────────────────────────────
 
-function getMenu() {
+// ── Menu cache (geladen van server) ───────────────────────────────────────
+let _menuCache = null;
+
+async function loadMenuData() {
   try {
-    const stored = localStorage.getItem('snack_menu');
-    if (stored) return JSON.parse(stored);
-  } catch {}
-  return MENU_DEFAULT.map(i => ({ ...i }));
+    const data = await apiCall('GET', {}, '/api/menu');
+    _menuCache = {
+      menu: data.menu || MENU_DEFAULT.map(function(i) { return Object.assign({}, i); }),
+      opslag: data.opslag != null ? data.opslag : 0,
+      opslagMode: data.opslagMode || 'pct'
+    };
+  } catch (err) {
+    console.warn('Kon menu niet laden van server:', err);
+    _menuCache = {
+      menu: MENU_DEFAULT.map(function(i) { return Object.assign({}, i); }),
+      opslag: 0,
+      opslagMode: 'pct'
+    };
+  }
+  return _menuCache;
 }
 
-function saveMenu(menu) {
-  localStorage.setItem('snack_menu', JSON.stringify(menu));
+function getMenu() {
+  return _menuCache ? _menuCache.menu : MENU_DEFAULT.map(function(i) { return Object.assign({}, i); });
+}
+
+async function saveMenu(menu) {
+  await apiCall('POST', { body: { menu: menu } }, '/api/menu');
+  if (_menuCache) _menuCache.menu = menu;
 }
 
 function getOpslag() {
-  return parseFloat(localStorage.getItem('snack_opslag') || '0');
+  return _menuCache ? _menuCache.opslag : 0;
 }
 
-function saveOpslag(val) {
-  localStorage.setItem('snack_opslag', String(val));
+async function saveOpslag(val) {
+  await apiCall('POST', { body: { opslag: val } }, '/api/menu');
+  if (_menuCache) _menuCache.opslag = val;
 }
 
 function getOpslagMode() {
-  return localStorage.getItem('snack_opslag_mode') || 'pct';
+  return _menuCache ? _menuCache.opslagMode : 'pct';
 }
 
-function saveOpslagMode(mode) {
-  localStorage.setItem('snack_opslag_mode', mode);
+async function saveOpslagMode(mode) {
+  await apiCall('POST', { body: { opslagMode: mode } }, '/api/menu');
+  if (_menuCache) _menuCache.opslagMode = mode;
 }
 
 function applyOpslag(basePrice, val) {
   if (!val) return basePrice;
-  const mode = getOpslagMode();
+  var mode = getOpslagMode();
   if (mode === 'eur') {
     return Math.round((basePrice + val) * 20) / 20;
   }
@@ -1870,13 +1892,18 @@ function applyOpslag(basePrice, val) {
 
 // ── Opslag instellen ──────────────────────────────────────────────────────
 
-function toggleOpslagMode() {
-  const current = getOpslagMode();
-  const newMode = current === 'pct' ? 'eur' : 'pct';
-  saveOpslagMode(newMode);
+async function toggleOpslagMode() {
+  var current = getOpslagMode();
+  var newMode = current === 'pct' ? 'eur' : 'pct';
+  try {
+    await apiCall('POST', { body: { opslagMode: newMode, opslag: 0 } }, '/api/menu');
+    if (_menuCache) { _menuCache.opslagMode = newMode; _menuCache.opslag = 0; }
+  } catch (err) {
+    alert('Fout bij opslaan: ' + err.message);
+    return;
+  }
   // Reset value when switching to avoid confusing units
   document.getElementById('opslag-input').value = 0;
-  saveOpslag(0);
   _syncOpslagModeUI(newMode);
   updateOpslag();
 }
@@ -1895,19 +1922,23 @@ function _syncOpslagModeUI(mode) {
   }
 }
 
-function updateOpslag() {
-  const val = parseFloat(document.getElementById('opslag-input').value) || 0;
-  saveOpslag(val);
-  const mode = getOpslagMode();
-  const badge = document.getElementById('opslag-badge');
+async function updateOpslag() {
+  var val = parseFloat(document.getElementById('opslag-input').value) || 0;
+  try {
+    await saveOpslag(val);
+  } catch (err) {
+    console.warn('Fout bij opslaan opslag:', err);
+  }
+  var mode = getOpslagMode();
+  var badge = document.getElementById('opslag-badge');
   if (val === 0) {
     badge.textContent = 'Geen opslag';
     badge.style.color = 'var(--text-muted)';
   } else if (mode === 'eur') {
-    badge.textContent = `+€ ${val.toFixed(2).replace('.', ',')} per product`;
+    badge.textContent = '+\u20AC ' + val.toFixed(2).replace('.', ',') + ' per product';
     badge.style.color = 'var(--accent)';
   } else {
-    badge.textContent = `+${val}% opslag actief`;
+    badge.textContent = '+' + val + '% opslag actief';
     badge.style.color = 'var(--accent)';
   }
   renderProducten();
@@ -1941,24 +1972,24 @@ function renderProducten() {
 // ── Export ────────────────────────────────────────────────────────────────
 
 function exportJSON() {
-  const menu = getMenu();
-  const opslag = getOpslag();
-  const mode = getOpslagMode();
-  const payload = { opslag_pct: mode === 'pct' ? opslag : 0, opslag_eur: mode === 'eur' ? opslag : 0, opslag_mode: mode, menu };
-  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-  downloadBlob(blob, `snack-menu-${todayFilename()}.json`);
+  var menu = getMenu();
+  var opslag = getOpslag();
+  var mode = getOpslagMode();
+  var payload = { opslag_pct: mode === 'pct' ? opslag : 0, opslag_eur: mode === 'eur' ? opslag : 0, opslag_mode: mode, menu: menu };
+  var blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  downloadBlob(blob, 'snack-menu-' + todayFilename() + '.json');
 }
 
 function exportCSV() {
-  const menu = getMenu();
-  const opslag = getOpslag();
-  const lines = ['nr,categorie,artikel,basisprijs,verkoopprijs'];
-  menu.forEach(item => {
-    const vp = applyOpslag(item.price, opslag);
-    lines.push(`${item.nr},"${item.cat}","${item.name}",${item.price.toFixed(2)},${vp.toFixed(2)}`);
+  var menu = getMenu();
+  var opslag = getOpslag();
+  var lines = ['nr,categorie,artikel,basisprijs,verkoopprijs'];
+  menu.forEach(function(item) {
+    var vp = applyOpslag(item.price, opslag);
+    lines.push(item.nr + ',"' + item.cat + '","' + item.name + '",' + item.price.toFixed(2) + ',' + vp.toFixed(2));
   });
-  const blob = new Blob([lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
-  downloadBlob(blob, `snack-menu-${todayFilename()}.csv`);
+  var blob = new Blob([lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+  downloadBlob(blob, 'snack-menu-' + todayFilename() + '.csv');
 }
 
 function downloadBlob(blob, filename) {
@@ -1979,18 +2010,23 @@ function todayFilename() {
 // ── Import ────────────────────────────────────────────────────────────────
 
 function handleImport(event) {
-  const file = event.target.files[0];
+  var file = event.target.files[0];
   if (!file) return;
   event.target.value = '';
 
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    const content = e.target.result;
+  if (!getAdminToken()) {
+    alert('Stel eerst een admin token in (sectie "Server Verbinding").');
+    return;
+  }
+
+  var reader = new FileReader();
+  reader.onload = async function(e) {
+    var content = e.target.result;
     try {
       if (file.name.endsWith('.json')) {
-        importJSON(content);
+        await importJSON(content);
       } else if (file.name.endsWith('.csv')) {
-        importCSV(content);
+        await importCSV(content);
       } else {
         alert('Onbekend bestandstype. Gebruik een .json of .csv bestand.');
       }
@@ -2001,38 +2037,48 @@ function handleImport(event) {
   reader.readAsText(file, 'UTF-8');
 }
 
-function importJSON(content) {
-  const data = JSON.parse(content);
+async function importJSON(content) {
+  var data = JSON.parse(content);
   // Support both { menu: [...] } wrapper and plain array
-  const menu = Array.isArray(data) ? data : (data.menu || []);
+  var menu = Array.isArray(data) ? data : (data.menu || []);
   if (!menu.length) throw new Error('Geen producten gevonden in het JSON-bestand.');
   validateMenu(menu);
-  saveMenu(menu);
-  // Restore opslag mode + value
+  // Build server payload with menu + opslag in one call
+  var body = { menu: menu };
   if (data.opslag_mode) {
-    saveOpslagMode(data.opslag_mode);
-    _syncOpslagModeUI(data.opslag_mode);
-    const val = data.opslag_mode === 'eur' ? (data.opslag_eur || 0) : (data.opslag_pct || 0);
-    saveOpslag(val);
-    document.getElementById('opslag-input').value = val;
+    body.opslagMode = data.opslag_mode;
+    body.opslag = data.opslag_mode === 'eur' ? (data.opslag_eur || 0) : (data.opslag_pct || 0);
   } else if (data.opslag_pct !== undefined) {
-    saveOpslag(data.opslag_pct);
+    body.opslag = data.opslag_pct;
+  }
+  await apiCall('POST', { body: body }, '/api/menu');
+  // Update local cache
+  if (_menuCache) {
+    _menuCache.menu = menu;
+    if (body.opslagMode) _menuCache.opslagMode = body.opslagMode;
+    if (body.opslag !== undefined) _menuCache.opslag = body.opslag;
+  }
+  // Update UI
+  if (data.opslag_mode) {
+    _syncOpslagModeUI(data.opslag_mode);
+    document.getElementById('opslag-input').value = body.opslag;
+  } else if (data.opslag_pct !== undefined) {
     document.getElementById('opslag-input').value = data.opslag_pct;
   }
   renderProducten();
   showImportSuccess(menu.length);
 }
 
-function importCSV(content) {
-  const lines = content.trim().split(/\r?\n/);
+async function importCSV(content) {
+  var lines = content.trim().split(/\r?\n/);
   // Skip header row
-  const dataLines = lines.filter((l, i) => i > 0 && l.trim());
-  const menu = dataLines.map((line, i) => {
+  var dataLines = lines.filter(function(l, i) { return i > 0 && l.trim(); });
+  var menu = dataLines.map(function(line, i) {
     // Parse CSV: nr,"cat","name",price,verkoopprijs
-    const cols = parseCSVLine(line);
-    if (cols.length < 4) throw new Error(`Regel ${i+2} heeft te weinig kolommen.`);
-    const price = parseFloat(cols[3]);
-    if (isNaN(price)) throw new Error(`Ongeldige prijs op regel ${i+2}: "${cols[3]}"`);
+    var cols = parseCSVLine(line);
+    if (cols.length < 4) throw new Error('Regel ' + (i+2) + ' heeft te weinig kolommen.');
+    var price = parseFloat(cols[3]);
+    if (isNaN(price)) throw new Error('Ongeldige prijs op regel ' + (i+2) + ': "' + cols[3] + '"');
     return {
       nr: parseInt(cols[0]) || (i + 1),
       cat: cols[1].trim(),
@@ -2042,7 +2088,8 @@ function importCSV(content) {
   });
   if (!menu.length) throw new Error('Geen producten gevonden in het CSV-bestand.');
   validateMenu(menu);
-  saveMenu(menu);
+  await apiCall('POST', { body: { menu: menu } }, '/api/menu');
+  if (_menuCache) _menuCache.menu = menu;
   renderProducten();
   showImportSuccess(menu.length);
 }
@@ -2081,15 +2128,23 @@ function showImportSuccess(count) {
 
 // ── Reset naar origineel ──────────────────────────────────────────────────
 
-function resetMenu() {
+async function resetMenu() {
   if (!confirm('Weet je zeker dat je het menu wilt resetten naar de originele lijst?\n\nAangepaste producten en prijzen gaan verloren.')) return;
-  localStorage.removeItem('snack_menu');
-  localStorage.removeItem('snack_opslag');
-  localStorage.removeItem('snack_opslag_mode');
-  document.getElementById('opslag-input').value = 0;
-  document.getElementById('opslag-badge').textContent = 'Geen opslag';
-  _syncOpslagModeUI('pct');
-  renderProducten();
+  try {
+    await apiCall('DELETE', {}, '/api/menu');
+    _menuCache = {
+      menu: MENU_DEFAULT.map(function(i) { return Object.assign({}, i); }),
+      opslag: 0,
+      opslagMode: 'pct'
+    };
+    document.getElementById('opslag-input').value = 0;
+    document.getElementById('opslag-badge').textContent = 'Geen opslag';
+    _syncOpslagModeUI('pct');
+    renderProducten();
+    showToast('Menu gereset naar standaard');
+  } catch (err) {
+    alert('Fout bij resetten: ' + err.message);
+  }
 }
 
 // ── Chat API Key beheer ────────────────────────────────────────────────────
@@ -2199,11 +2254,26 @@ updateAdminTokenStatus();
 loadQRPreview();
 loadAdminApiKeyStatus();
 
-// Herstel opslag instelling
-_syncOpslagModeUI(getOpslagMode());
-document.getElementById('opslag-input').value = getOpslag();
-updateOpslag();
-renderProducten();
+// Menu + opslag laden van server, daarna UI renderen
+loadMenuData().then(function() {
+  _syncOpslagModeUI(getOpslagMode());
+  document.getElementById('opslag-input').value = getOpslag();
+  // Update badge without saving
+  var val = getOpslag();
+  var mode = getOpslagMode();
+  var badge = document.getElementById('opslag-badge');
+  if (val === 0) {
+    badge.textContent = 'Geen opslag';
+    badge.style.color = 'var(--text-muted)';
+  } else if (mode === 'eur') {
+    badge.textContent = '+\u20AC ' + val.toFixed(2).replace('.', ',') + ' per product';
+    badge.style.color = 'var(--accent)';
+  } else {
+    badge.textContent = '+' + val + '% opslag actief';
+    badge.style.color = 'var(--accent)';
+  }
+  renderProducten();
+});
 renderOrders();
 </script>
 </body>
