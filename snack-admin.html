@@ -1033,7 +1033,8 @@
     <div class="section-header">
       <h2>📋 Bestellingen overzicht</h2>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-        <button class="btn-primary" onclick="openTodayOnServer()" style="padding:7px 14px;font-size:.82rem;">📅 Vandaag openen</button>
+        <button class="btn-primary" onclick="openTodayOnServer()" style="padding:7px 14px;font-size:.82rem;">🔓 Vandaag openen</button>
+        <button class="btn-danger" onclick="closeTodayOnServer()" style="padding:7px 14px;font-size:.82rem;">🔒 Vandaag sluiten</button>
         <button class="btn-secondary" onclick="refreshAll()">↻ Vernieuwen</button>
         <button class="btn-danger" onclick="deleteAllOrders()" style="padding:7px 14px;font-size:.82rem;">🗑 Alles verwijderen</button>
       </div>
@@ -1424,6 +1425,15 @@ async function openTodayOnServer() {
     return;
   }
   await openDateOnServer(today);
+}
+
+async function closeTodayOnServer() {
+  var today = getTodayDate();
+  if (!_openDates.includes(today)) {
+    showToast('Vandaag (' + today + ') is al gesloten');
+    return;
+  }
+  await closeDateOnServer(today);
 }
 
 function getTodayDate() {
