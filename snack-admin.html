@@ -1006,7 +1006,7 @@
     <button class="btn-primary" style="width:100%;justify-content:center;" onclick="doLogin()">
       🔓 Inloggen
     </button>
-    <div class="login-hint">Standaard wachtwoord: <strong>admin</strong><br>Wijzig via de knop in het beheerscherm.</div>
+    <div class="login-hint">Wijzig het wachtwoord via de knop in het beheerscherm.</div>
   </div>
 </div>
 
@@ -1086,6 +1086,11 @@
           <div class="sso-field">
             <label>Toegestaan e-maildomein</label>
             <input type="text" id="sso-allowed-domain" placeholder="bijv. azerty.nl" />
+          </div>
+          <div class="sso-field">
+            <label>Beheerders e-mailadressen <span style="font-weight:400;color:var(--text-muted);">(komma-gescheiden)</span></label>
+            <input type="text" id="sso-admin-emails" placeholder="bijv. richard@bedrijf.nl, jan@bedrijf.nl" />
+            <small style="color:var(--text-muted);font-size:.78rem;">Deze gebruikers mogen direct naar het beheerscherm zonder extra admin-wachtwoord.</small>
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;">
             <button class="btn-primary" onclick="saveSSOSettings()">💾 SSO Opslaan</button>
@@ -2702,7 +2707,7 @@ function escapeAdminHtml(str) {
 
 // ── SSO Instellingen beheer ────────────────────────────────────────────────
 
-var _ssoConfig = { enabled: false, clientId: '', tenantId: '', allowedDomain: '' };
+var _ssoConfig = { enabled: false, clientId: '', tenantId: '', allowedDomain: '', adminEmails: '' };
 
 async function loadSSOSettings() {
   try {
@@ -2711,7 +2716,8 @@ async function loadSSOSettings() {
       enabled: !!data.ssoEnabled,
       clientId: data.ssoClientId || '',
       tenantId: data.ssoTenantId || '',
-      allowedDomain: data.ssoAllowedDomain || ''
+      allowedDomain: data.ssoAllowedDomain || '',
+      adminEmails: data.ssoAdminEmails || ''
     };
   } catch (err) {
     console.warn('Kon SSO instellingen niet laden:', err);
@@ -2740,9 +2746,12 @@ function syncSSOUI() {
     }
   }
 
+  var adminEmailsInput = document.getElementById('sso-admin-emails');
+
   if (clientInput) clientInput.value = _ssoConfig.clientId;
   if (tenantInput) tenantInput.value = _ssoConfig.tenantId;
   if (domainInput) domainInput.value = _ssoConfig.allowedDomain;
+  if (adminEmailsInput) adminEmailsInput.value = _ssoConfig.adminEmails;
 
   if (hintEl) {
     hintEl.textContent = location.origin + '/index.html';
@@ -2774,6 +2783,7 @@ async function saveSSOSettings() {
   var clientId = (document.getElementById('sso-client-id').value || '').trim();
   var tenantId = (document.getElementById('sso-tenant-id').value || '').trim();
   var allowedDomain = (document.getElementById('sso-allowed-domain').value || '').trim().toLowerCase();
+  var adminEmails = (document.getElementById('sso-admin-emails').value || '').trim().toLowerCase();
 
   if (_ssoConfig.enabled && (!clientId || !tenantId || !allowedDomain)) {
     alert('Vul alle SSO-velden in (Client ID, Tenant ID en Domein) om SSO in te schakelen.');
@@ -2786,12 +2796,14 @@ async function saveSSOSettings() {
         ssoEnabled: _ssoConfig.enabled,
         ssoClientId: clientId,
         ssoTenantId: tenantId,
-        ssoAllowedDomain: allowedDomain
+        ssoAllowedDomain: allowedDomain,
+        ssoAdminEmails: adminEmails
       }
     });
     _ssoConfig.clientId = clientId;
     _ssoConfig.tenantId = tenantId;
     _ssoConfig.allowedDomain = allowedDomain;
+    _ssoConfig.adminEmails = adminEmails;
     syncSSOUI();
     showToast('✓ SSO instellingen opgeslagen');
   } catch (err) {
@@ -2838,6 +2850,24 @@ _applyTheme(localStorage.getItem('snack_theme') || 'dark');
 
 // ── Init ──────────────────────────────────────────────────────────────────
 
+// Check if current SSO user is an admin (skip admin password)
+async function checkSSOAdmin() {
+  try {
+    var userData = JSON.parse(sessionStorage.getItem('snack_user') || 'null');
+    if (!userData || !userData.email) return false;
+
+    var resp = await fetch('/api/settings?key=sso');
+    var data = await resp.json();
+    var adminEmails = (data.ssoAdminEmails || '').toLowerCase();
+    if (!adminEmails) return false;
+
+    var list = adminEmails.split(',').map(function(e) { return e.trim(); });
+    return list.indexOf(userData.email.toLowerCase()) !== -1;
+  } catch (e) {
+    return false;
+  }
+}
+
 // Always start with locked sections, then show overlay if not logged in
 setLockedSections(true);
 
@@ -2845,8 +2875,18 @@ if (isLoggedIn()) {
   document.getElementById('login-overlay').style.display = 'none';
   setLockedSections(false);
 } else {
-  document.getElementById('login-overlay').style.display = 'flex';
-  setTimeout(() => document.getElementById('login-password').focus(), 100);
+  // Check SSO admin before showing login overlay
+  checkSSOAdmin().then(function(isSSOAdmin) {
+    if (isSSOAdmin) {
+      // SSO admin — skip admin password, auto-login
+      sessionStorage.setItem(SESSION_KEY, '1');
+      document.getElementById('login-overlay').style.display = 'none';
+      setLockedSections(false);
+    } else {
+      document.getElementById('login-overlay').style.display = 'flex';
+      setTimeout(() => document.getElementById('login-password').focus(), 100);
+    }
+  });
 }
 
 // Server-gerelateerde UI laden — load admin token from KV if not in localStorage

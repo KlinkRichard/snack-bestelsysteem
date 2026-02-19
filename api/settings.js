@@ -31,17 +31,19 @@ module.exports = async function handler(req, res) {
       }
 
       if (keyParam === 'sso') {
-        const [ssoEnabled, ssoClientId, ssoTenantId, ssoAllowedDomain] = await Promise.all([
+        const [ssoEnabled, ssoClientId, ssoTenantId, ssoAllowedDomain, ssoAdminEmails] = await Promise.all([
           kv.get('sso_enabled'),
           kv.get('sso_client_id'),
           kv.get('sso_tenant_id'),
           kv.get('sso_allowed_domain'),
+          kv.get('sso_admin_emails'),
         ]);
         return res.json({
           ssoEnabled: !!ssoEnabled,
           ssoClientId: ssoClientId || '',
           ssoTenantId: ssoTenantId || '',
           ssoAllowedDomain: ssoAllowedDomain || '',
+          ssoAdminEmails: ssoAdminEmails || '',
         });
       }
 
@@ -100,6 +102,9 @@ module.exports = async function handler(req, res) {
       if (ssoAllowedDomain !== undefined) {
         promises.push(kv.set('sso_allowed_domain', ssoAllowedDomain));
       }
+      if (req.body.ssoAdminEmails !== undefined) {
+        promises.push(kv.set('sso_admin_emails', req.body.ssoAdminEmails));
+      }
 
       await Promise.all(promises);
       return res.json({ ok: true });
@@ -129,6 +134,7 @@ module.exports = async function handler(req, res) {
           kv.del('sso_client_id'),
           kv.del('sso_tenant_id'),
           kv.del('sso_allowed_domain'),
+          kv.del('sso_admin_emails'),
         ]);
         return res.json({ ok: true });
       }
