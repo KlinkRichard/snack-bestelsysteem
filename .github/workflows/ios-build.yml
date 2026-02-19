@@ -1,0 +1,143 @@
+name: Build iOS App
+
+on:
+  push:
+    paths:
+      - 'AZERTYSnacks/**'
+  workflow_dispatch:  # Handmatig starten vanuit GitHub
+
+jobs:
+  build:
+    name: Build AZERTY Snacks iOS
+    runs-on: macos-14  # Apple Silicon Mac runner (gratis voor public repos)
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Select Xcode version
+        run: sudo xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: Build app (Debug - no signing)
+        working-directory: AZERTYSnacks
+        run: |
+          xcodebuild build \
+            -project AZERTYSnacks.xcodeproj \
+            -scheme AZERTYSnacks \
+            -destination 'platform=iOS Simulator,name=iPhone 15,OS=latest' \
+            -configuration Debug \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            | tail -20
+
+      - name: Build app (Release - unsigned IPA)
+        working-directory: AZERTYSnacks
+        run: |
+          xcodebuild archive \
+            -project AZERTYSnacks.xcodeproj \
+            -scheme AZERTYSnacks \
+            -destination 'generic/platform=iOS' \
+            -archivePath $RUNNER_TEMP/AZERTYSnacks.xcarchive \
+            -configuration Release \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            | tail -20
+
+      - name: Export unsigned app
+        run: |
+          mkdir -p $RUNNER_TEMP/export
+          cp -R $RUNNER_TEMP/AZERTYSnacks.xcarchive/Products/Applications/AZERTYSnacks.app $RUNNER_TEMP/export/ 2>/dev/null || true
+          # Create a zip of the archive for download
+          cd $RUNNER_TEMP
+          zip -r AZERTYSnacks-archive.zip AZERTYSnacks.xcarchive
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: AZERTYSnacks-build
+          path: ${{ runner.temp }}/AZERTYSnacks-archive.zip
+          retention-days: 30
+
+  # Optioneel: build voor TestFlight (vereist signing secrets)
+  release:
+    name: Build & Sign for TestFlight
+    runs-on: macos-14
+    needs: build
+    if: github.ref == 'refs/heads/main' && vars.APPLE_SIGNING_ENABLED == 'true'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer
+
+      - name: Install certificate & provisioning profile
+        env:
+          BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
+          P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
+          BUILD_PROVISION_PROFILE_BASE64: ${{ secrets.BUILD_PROVISION_PROFILE_BASE64 }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          # Create temporary keychain
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+
+          # Import certificate
+          CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
+          echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o $CERTIFICATE_PATH
+          security import $CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security list-keychain -d user -s $KEYCHAIN_PATH
+
+          # Install provisioning profile
+          PP_PATH=$RUNNER_TEMP/build_pp.mobileprovision
+          echo -n "$BUILD_PROVISION_PROFILE_BASE64" | base64 --decode -o $PP_PATH
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          cp $PP_PATH ~/Library/MobileDevice/Provisioning\ Profiles
+
+      - name: Build & Archive
+        working-directory: AZERTYSnacks
+        env:
+          DEVELOPMENT_TEAM: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          xcodebuild archive \
+            -project AZERTYSnacks.xcodeproj \
+            -scheme AZERTYSnacks \
+            -destination 'generic/platform=iOS' \
+            -archivePath $RUNNER_TEMP/AZERTYSnacks.xcarchive \
+            -configuration Release \
+            DEVELOPMENT_TEAM="$DEVELOPMENT_TEAM"
+
+      - name: Export IPA
+        run: |
+          xcodebuild -exportArchive \
+            -archivePath $RUNNER_TEMP/AZERTYSnacks.xcarchive \
+            -exportOptionsPlist AZERTYSnacks/ExportOptions.plist \
+            -exportPath $RUNNER_TEMP/export
+
+      - name: Upload to TestFlight
+        env:
+          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          APP_STORE_CONNECT_API_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          APP_STORE_CONNECT_API_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
+        run: |
+          xcrun altool --upload-app \
+            --type ios \
+            --file $RUNNER_TEMP/export/AZERTYSnacks.ipa \
+            --apiKey "$APP_STORE_CONNECT_API_KEY_ID" \
+            --apiIssuer "$APP_STORE_CONNECT_API_ISSUER_ID"
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: AZERTYSnacks-ipa
+          path: ${{ runner.temp }}/export/AZERTYSnacks.ipa
+          retention-days: 90
