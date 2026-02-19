@@ -57,7 +57,7 @@ module.exports = async function handler(req, res) {
       });
     } catch (err) {
       console.error('GET /api/settings error:', err);
-      return res.status(500).json({ error: 'Server fout bij ophalen instellingen', detail: err.message, stack: err.stack });
+      return res.status(500).json({ error: 'Server fout bij ophalen instellingen' });
     }
   }
 
