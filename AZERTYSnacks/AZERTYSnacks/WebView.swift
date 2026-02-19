@@ -13,13 +13,16 @@ struct WebView: UIViewRepresentable {
         config.allowsInlineMediaPlayback = true
         config.mediaTypesRequiringUserActionForPlayback = []
 
-        // Allow localStorage and cookies
+        // Use default (persistent) data store for cookies & localStorage
         config.websiteDataStore = .default()
 
-        // Preferences
+        // JavaScript preferences
         let prefs = WKWebpagePreferences()
         prefs.allowsContentJavaScript = true
         config.defaultWebpagePreferences = prefs
+
+        // Allow fetch/XHR cross-origin requests (needed for /api/ calls & Anthropic)
+        config.preferences.setValue(true, forKey: "allowFileAccessFromFileURLs")
 
         let webView = WKWebView(frame: .zero, configuration: config)
         webView.navigationDelegate = context.coordinator
@@ -28,14 +31,15 @@ struct WebView: UIViewRepresentable {
         webView.scrollView.showsHorizontalScrollIndicator = false
         webView.allowsBackForwardNavigationGestures = true
         webView.isOpaque = false
-        webView.backgroundColor = UIColor(red: 15/255, green: 17/255, blue: 32/255, alpha: 1) // #0f1120
-
-        // Match the dark background while loading
+        webView.backgroundColor = UIColor(red: 15/255, green: 17/255, blue: 32/255, alpha: 1)
         webView.scrollView.backgroundColor = UIColor(red: 15/255, green: 17/255, blue: 32/255, alpha: 1)
 
-        // Disable zoom (we handle it in CSS)
+        // Disable pinch zoom
         webView.scrollView.maximumZoomScale = 1.0
         webView.scrollView.minimumZoomScale = 1.0
+
+        // Custom User-Agent so the website knows it's the native app
+        webView.customUserAgent = "AZERTYSnacks-iOS/1.0 " + (webView.value(forKey: "_userAgent") as? String ?? "")
 
         // Pull to refresh
         let refreshControl = UIRefreshControl()
@@ -47,7 +51,9 @@ struct WebView: UIViewRepresentable {
 
         // Load the app
         if let url = URL(string: baseURL + "/index.html") {
-            webView.load(URLRequest(url: url))
+            var request = URLRequest(url: url)
+            request.cachePolicy = .reloadRevalidatingCacheData
+            webView.load(request)
         }
 
         return webView
@@ -60,7 +66,7 @@ struct WebView: UIViewRepresentable {
 
         @objc func handleRefresh(_ refreshControl: UIRefreshControl) {
             webView?.reload()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
                 refreshControl.endRefreshing()
             }
         }
@@ -73,24 +79,26 @@ struct WebView: UIViewRepresentable {
                 return
             }
 
-            let urlString = url.absoluteString
+            let host = url.host?.lowercased() ?? ""
 
-            // Allow navigation within our app
-            if urlString.contains("snack-bestelsysteem.vercel.app") {
+            // Allow all Vercel domains (including preview deployments)
+            if host.hasSuffix("vercel.app") || host.hasSuffix("vercel.com") {
                 decisionHandler(.allow)
                 return
             }
 
-            // Allow Microsoft SSO login flow
-            if urlString.contains("login.microsoftonline.com") ||
-               urlString.contains("login.live.com") ||
-               urlString.contains("microsoft.com") {
+            // Allow Microsoft SSO
+            if host.hasSuffix("microsoftonline.com") ||
+               host.hasSuffix("microsoft.com") ||
+               host.hasSuffix("live.com") ||
+               host.hasSuffix("msauth.net") ||
+               host.hasSuffix("msftauth.net") {
                 decisionHandler(.allow)
                 return
             }
 
-            // Allow Anthropic API calls (for chat)
-            if urlString.contains("api.anthropic.com") {
+            // Allow Anthropic API
+            if host.hasSuffix("anthropic.com") {
                 decisionHandler(.allow)
                 return
             }
@@ -102,25 +110,39 @@ struct WebView: UIViewRepresentable {
                 return
             }
 
+            // Allow everything else (API calls etc.)
             decisionHandler(.allow)
         }
 
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-            // Inject CSS to handle the status bar area
-            let css = """
-            body {
-                -webkit-touch-callout: none;
-            }
-            """
+            // Inject CSS tweaks for native app feel
             let js = """
-            var style = document.createElement('style');
-            style.innerHTML = `\(css)`;
-            document.head.appendChild(style);
+            (function() {
+                var style = document.createElement('style');
+                style.innerHTML = `
+                    body { -webkit-touch-callout: none; }
+                    /* Hide "add to homescreen" banners if any */
+                    .pwa-install-prompt { display: none !important; }
+                `;
+                document.head.appendChild(style);
+
+                // Signal to the web app that we're in a native wrapper
+                window.isNativeApp = true;
+            })();
             """
             webView.evaluateJavaScript(js)
         }
 
-        // MARK: - UI Delegate (handle alerts, confirms, prompts)
+        // Handle SSL errors - allow our known domains
+        func webView(_ webView: WKWebView, didReceive challenge: URLAuthenticationChallenge, completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
+            if let trust = challenge.protectionSpace.serverTrust {
+                completionHandler(.useCredential, URLCredential(trust: trust))
+            } else {
+                completionHandler(.performDefaultHandling, nil)
+            }
+        }
+
+        // MARK: - UI Delegate
 
         func webView(_ webView: WKWebView, runJavaScriptAlertPanelWithMessage message: String, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping () -> Void) {
             let alert = UIAlertController(title: nil, message: message, preferredStyle: .alert)
@@ -155,7 +177,7 @@ struct WebView: UIViewRepresentable {
             topViewController()?.present(alert, animated: true)
         }
 
-        // Open new windows (target="_blank") in the same webview
+        // Open target="_blank" links in same webview
         func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
             if navigationAction.targetFrame == nil || !(navigationAction.targetFrame!.isMainFrame) {
                 webView.load(navigationAction.request)
