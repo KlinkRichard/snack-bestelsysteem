@@ -985,6 +985,7 @@
     <div class="section-header">
       <h2>📋 Bestellingen overzicht</h2>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <button class="btn-primary" onclick="openTodayOnServer()" style="padding:7px 14px;font-size:.82rem;">📅 Vandaag openen</button>
         <button class="btn-secondary" onclick="refreshAll()">↻ Vernieuwen</button>
         <button class="btn-danger" onclick="deleteAllOrders()" style="padding:7px 14px;font-size:.82rem;">🗑 Alles verwijderen</button>
       </div>
@@ -1180,13 +1181,21 @@ function saveOrders(orders) {
   localStorage.setItem('snack_orders', JSON.stringify(orders));
 }
 
-function getClosedDates() {
-  try { return JSON.parse(localStorage.getItem('closed_dates') || '[]'); }
-  catch { return []; }
+// ── Open datums (server-side) ────────────────────────────────────────────
+let _openDates = [];
+
+async function loadOpenDates() {
+  try {
+    var data = await apiCall('GET', {}, '/api/dates');
+    _openDates = data.openDates || [];
+  } catch (e) {
+    console.warn('Kon open datums niet laden:', e);
+    _openDates = [];
+  }
 }
 
-function saveClosedDates(dates) {
-  localStorage.setItem('closed_dates', JSON.stringify(dates));
+function getOpenDates() {
+  return _openDates;
 }
 
 function escapeHtml(str) {
@@ -1328,36 +1337,64 @@ async function removeQR() {
 
 // ── Date management ───────────────────────────────────────────────────────
 
-function closeDate(dateStr) {
-  const dates = getClosedDates();
-  if (!dates.includes(dateStr)) {
-    dates.push(dateStr);
-    saveClosedDates(dates);
+async function openDateOnServer(dateStr) {
+  try {
+    var data = await apiCall('POST', { body: { date: dateStr } }, '/api/dates');
+    _openDates = data.openDates || _openDates;
+    if (!_openDates.includes(dateStr)) _openDates.push(dateStr);
+    showToast('Datum ' + dateStr + ' geopend');
+  } catch (err) {
+    alert('Fout bij openen datum: ' + err.message);
   }
   renderOrders();
 }
 
-function reopenDate(dateStr) {
-  const dates = getClosedDates().filter(d => d !== dateStr);
-  saveClosedDates(dates);
+async function closeDateOnServer(dateStr) {
+  try {
+    var data = await apiCall('DELETE', { key: null }, '/api/dates?date=' + encodeURIComponent(dateStr));
+    _openDates = _openDates.filter(function(d) { return d !== dateStr; });
+    showToast('Datum ' + dateStr + ' gesloten');
+  } catch (err) {
+    alert('Fout bij sluiten datum: ' + err.message);
+  }
   renderOrders();
 }
 
+async function openTodayOnServer() {
+  var today = getTodayDate();
+  if (_openDates.includes(today)) {
+    showToast('Vandaag (' + today + ') is al geopend');
+    return;
+  }
+  await openDateOnServer(today);
+}
+
+function getTodayDate() {
+  var d = new Date();
+  var dd = String(d.getDate()).padStart(2, '0');
+  var mm = String(d.getMonth() + 1).padStart(2, '0');
+  var yyyy = d.getFullYear();
+  return dd + '-' + mm + '-' + yyyy;
+}
+
 function deleteDate(dateStr) {
-  if (!confirm(`Weet je zeker dat je alle bestellingen voor ${dateStr} wilt verwijderen?\n\nDit kan niet ongedaan worden gemaakt.`)) return;
-  const orders = getOrders().filter(o => o.date !== dateStr);
+  if (!confirm('Weet je zeker dat je alle bestellingen voor ' + dateStr + ' wilt verwijderen?\n\nDit kan niet ongedaan worden gemaakt.')) return;
+  var orders = getOrders().filter(function(o) { return o.date !== dateStr; });
   saveOrders(orders);
-  const dates = getClosedDates().filter(d => d !== dateStr);
-  saveClosedDates(dates);
+  // Also remove from open dates on server
+  apiCall('DELETE', { key: null }, '/api/dates?date=' + encodeURIComponent(dateStr)).catch(function() {});
+  _openDates = _openDates.filter(function(d) { return d !== dateStr; });
   renderOrders();
 }
 
 function deleteAllOrders() {
-  const orders = getOrders();
+  var orders = getOrders();
   if (!orders.length) { alert('Er zijn geen bestellingen om te verwijderen.'); return; }
-  if (!confirm(`Weet je zeker dat je ALLE ${orders.length} bestellingen wilt verwijderen?\n\nDit kan niet ongedaan worden gemaakt.`)) return;
+  if (!confirm('Weet je zeker dat je ALLE ' + orders.length + ' bestellingen wilt verwijderen?\n\nDit kan niet ongedaan worden gemaakt.')) return;
   localStorage.removeItem('snack_orders');
-  localStorage.removeItem('closed_dates');
+  // Also clear all open dates on server
+  apiCall('DELETE', { key: null }, '/api/dates?date=all').catch(function() {});
+  _openDates = [];
   renderOrders();
 }
 
@@ -1521,7 +1558,7 @@ function renderStats(orders) {
 
 function renderOrders() {
   const orders = getOrders();
-  const closedDates = getClosedDates();
+  const openDates = getOpenDates();
   const container = document.getElementById('orders-container');
 
   renderStats(orders);
@@ -1549,7 +1586,7 @@ function renderOrders() {
 
   sortedDates.forEach(date => {
     const dateOrders = grouped[date].sort((a, b) => a.timestamp - b.timestamp);
-    const isClosed = closedDates.includes(date);
+    const dateIsOpen = openDates.includes(date);
     const grandTotal = dateOrders.reduce((s, o) => s + o.total, 0);
     const grandTip = dateOrders.reduce((s, o) => s + (o.fooi || 0), 0);
     const aggregate = aggregateItems(dateOrders);
@@ -1564,15 +1601,15 @@ function renderOrders() {
     headerDiv.innerHTML = `
       <div class="date-header-left">
         <span class="date-label">📅 ${date}</span>
-        <span class="badge ${isClosed ? 'badge-closed' : 'badge-open'}">
-          ${isClosed ? '🔒 Afgesloten' : '🟢 Open'}
+        <span class="badge ${dateIsOpen ? 'badge-open' : 'badge-closed'}">
+          ${dateIsOpen ? '🟢 Open' : '🔒 Gesloten'}
         </span>
         <span class="date-meta">${dateOrders.length} bestelling${dateOrders.length !== 1 ? 'en' : ''} &nbsp;·&nbsp; Totaal: <strong style="color:var(--accent)">${fmt(grandTotal)}</strong></span>
       </div>
       <div class="date-actions">
-        ${isClosed
-          ? `<button class="btn-reopen-date" onclick="reopenDate('${date}')">🔓 Heropenen</button>`
-          : `<button class="btn-close-date" onclick="closeDate('${date}')">🔒 Afsluiten</button>`
+        ${dateIsOpen
+          ? `<button class="btn-close-date" onclick="closeDateOnServer('${date}')">🔒 Sluiten</button>`
+          : `<button class="btn-reopen-date" onclick="openDateOnServer('${date}')">🔓 Openen</button>`
         }
         <button class="btn-delete-date" onclick="deleteDate('${date}')">🗑 Verwijderen</button>
       </div>`;
@@ -1662,7 +1699,8 @@ function switchTab(tab) {
   if (tab === 'naam') renderByName();
 }
 
-function refreshAll() {
+async function refreshAll() {
+  await loadOpenDates();
   renderOrders();
   if (activeTab === 'naam') renderByName();
 }
@@ -2274,7 +2312,11 @@ loadMenuData().then(function() {
   }
   renderProducten();
 });
-renderOrders();
+
+// Open datums laden van server, daarna bestellingen renderen
+loadOpenDates().then(function() {
+  renderOrders();
+});
 </script>
 </body>
 </html>

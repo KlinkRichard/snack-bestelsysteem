@@ -1180,8 +1180,8 @@
 </header>
 
 <!-- Closed-date banner -->
-<div class="closed-banner" id="closed-banner">
-  <span id="closed-banner-text">Bestelling is afgesloten</span>
+<div class="closed-banner" id="closed-banner" style="display:block;">
+  <span id="closed-banner-text">Bestelling is nog niet geopend</span>
 </div>
 
 <div class="app">
@@ -1354,13 +1354,22 @@ function saveOrders(orders) {
   localStorage.setItem('snack_orders', JSON.stringify(orders));
 }
 
-function getClosedDates() {
-  try { return JSON.parse(localStorage.getItem('closed_dates') || '[]'); }
-  catch { return []; }
+// ── Open datums (server-side) ────────────────────────────────────────────
+let _openDates = [];
+
+async function loadOpenDates() {
+  try {
+    var resp = await fetch('/api/dates');
+    var data = await resp.json();
+    _openDates = data.openDates || [];
+  } catch (e) {
+    console.warn('Kon open datums niet laden van server:', e);
+    _openDates = [];
+  }
 }
 
-function isDateClosed(dateStr) {
-  return getClosedDates().includes(dateStr);
+function isDateOpen(dateStr) {
+  return _openDates.includes(dateStr);
 }
 
 // ── Server settings (QR + API key) ──────────────────────────────────────────
@@ -1515,15 +1524,15 @@ let activeFilter = 'all';
 
 // ── Date status ────────────────────────────────────────────────────────────
 function checkDateStatus() {
-  const today = getTodayDate();
-  const closed = isDateClosed(today);
-  const banner = document.getElementById('closed-banner');
-  const bannerText = document.getElementById('closed-banner-text');
-  const submitBtn = document.getElementById('submit-btn');
+  var today = getTodayDate();
+  var open = isDateOpen(today);
+  var banner = document.getElementById('closed-banner');
+  var bannerText = document.getElementById('closed-banner-text');
+  var submitBtn = document.getElementById('submit-btn');
 
-  if (closed) {
+  if (!open) {
     banner.style.display = 'block';
-    bannerText.textContent = `🔒 Bestelling voor ${today} is afgesloten — er kan niet meer besteld worden.`;
+    bannerText.textContent = '🔒 Bestelling voor ' + today + ' is nog niet geopend — er kan nog niet besteld worden.';
     submitBtn.disabled = true;
   } else {
     banner.style.display = 'none';
@@ -1563,7 +1572,7 @@ function applyFilters() {
   const q = document.getElementById('search').value.toLowerCase();
   const container = document.getElementById('menu-container');
   container.innerHTML = '';
-  const closedToday = isDateClosed(getTodayDate());
+  const notOpenToday = !isDateOpen(getTodayDate());
 
   const cats = [...new Set(MENU.map(i => i.cat))];
   cats.forEach(cat => {
@@ -1584,12 +1593,12 @@ function applyFilters() {
       const qty = cart[item.nr] || 0;
       const inCart = qty > 0;
       const card = document.createElement('div');
-      card.className = 'item-card' + (inCart ? ' in-cart' : '') + (closedToday ? ' closed-item' : '');
+      card.className = 'item-card' + (inCart ? ' in-cart' : '') + (notOpenToday ? ' closed-item' : '');
       card.id = 'card-' + item.nr;
 
       let actionHtml;
-      if (closedToday) {
-        actionHtml = `<span style="font-size:.75rem;color:var(--red);font-weight:600;">Afgesloten</span>`;
+      if (notOpenToday) {
+        actionHtml = `<span style="font-size:.75rem;color:var(--red);font-weight:600;">Niet geopend</span>`;
       } else if (qty === 0) {
         actionHtml = `<button class="add-btn" onclick="addItem(${item.nr})" title="Voeg toe">+</button>`;
       } else {
@@ -1623,13 +1632,13 @@ function setFilter(btn) {
 
 // ── Cart logic ─────────────────────────────────────────────────────────────
 function addItem(nr) {
-  if (isDateClosed(getTodayDate())) return;
+  if (!isDateOpen(getTodayDate())) return;
   cart[nr] = (cart[nr] || 0) + 1;
   updateAll();
 }
 
 function changeQty(nr, delta) {
-  if (isDateClosed(getTodayDate())) return;
+  if (!isDateOpen(getTodayDate())) return;
   cart[nr] = (cart[nr] || 0) + delta;
   if (cart[nr] <= 0) delete cart[nr];
   updateAll();
@@ -1659,8 +1668,8 @@ function updateAll() {
   const count = cartCount();
   document.getElementById('header-badge').textContent = count;
   document.getElementById('fab-badge').textContent = count + ' item' + (count !== 1 ? 's' : '');
-  // Only enable submit if not closed and cart has items
-  if (!isDateClosed(getTodayDate())) {
+  // Only enable submit if date is open and cart has items
+  if (isDateOpen(getTodayDate())) {
     document.getElementById('submit-btn').disabled = count === 0;
   }
 }
@@ -1709,8 +1718,8 @@ function renderCart() {
 function submitOrder() {
   const today = getTodayDate();
 
-  if (isDateClosed(today)) {
-    alert(`Bestelling voor ${today} is afgesloten.`);
+  if (!isDateOpen(today)) {
+    alert('Bestelling voor ' + today + ' is nog niet geopend.');
     return;
   }
 
@@ -1798,8 +1807,8 @@ function deleteMyOrder(orderId) {
   const orders = getOrders();
   const order = orders.find(o => o.id === orderId);
   if (!order) { renderOverview(); return; }
-  if (isDateClosed(order.date)) {
-    alert('Deze bestelling kan niet meer verwijderd worden — de datum is afgesloten.');
+  if (!isDateOpen(order.date)) {
+    alert('Deze bestelling kan niet meer verwijderd worden — de datum is niet meer geopend.');
     return;
   }
   if (!confirm('Weet je zeker dat je jouw bestelling wilt verwijderen?')) return;
@@ -1809,7 +1818,6 @@ function deleteMyOrder(orderId) {
 
 function renderOverview() {
   const orders = getOrders();
-  const closedDates = getClosedDates();
   const tabBar = document.getElementById('overview-tab-bar');
   const panels = document.getElementById('overview-panels');
 
@@ -1835,10 +1843,10 @@ function renderOverview() {
   // Render tab buttons
   tabBar.innerHTML = '';
   sortedDates.forEach(date => {
-    const isClosed = closedDates.includes(date);
+    const dateIsOpen = isDateOpen(date);
     const btn = document.createElement('button');
     btn.className = 'overview-tab-btn' + (date === overviewActiveTab ? ' active' : '');
-    btn.textContent = `${date}${isClosed ? ' 🔒' : ''}`;
+    btn.textContent = date + (dateIsOpen ? '' : ' 🔒');
     btn.onclick = () => { overviewActiveTab = date; renderOverview(); };
     tabBar.appendChild(btn);
   });
@@ -1846,7 +1854,7 @@ function renderOverview() {
   // Render active panel
   panels.innerHTML = '';
   const dateOrders = grouped[overviewActiveTab] || [];
-  const isClosed = closedDates.includes(overviewActiveTab);
+  const activeIsOpen = isDateOpen(overviewActiveTab);
 
   const panel = document.createElement('div');
   panel.className = 'overview-body';
@@ -1875,9 +1883,9 @@ function renderOverview() {
         <div class="ov-row-right">
           <span class="ov-total">${fmt(order.total)}</span>
           <span class="ov-time">${time}</span>
-          ${isClosed
-            ? `<span class="ov-closed-tag">🔒 Afgesloten</span>`
-            : `<button class="ov-delete-btn" onclick="deleteMyOrder('${order.id}')">🗑 Verwijderen</button>`
+          ${activeIsOpen
+            ? '<button class="ov-delete-btn" onclick="deleteMyOrder(\'' + order.id + '\')">🗑 Verwijderen</button>'
+            : '<span class="ov-closed-tag">🔒 Gesloten</span>'
           }
         </div>`;
       panel.appendChild(row);
@@ -2332,14 +2340,17 @@ function toggleTheme() {
 _applyTheme(localStorage.getItem('snack_theme') || 'dark');
 
 // ── Init ───────────────────────────────────────────────────────────────────
-checkDateStatus();
 
-// Laad alles van server: QR, API key, menu
+// Laad alles van server: QR, API key, menu, open datums
 (async function() {
   // QR + API key laden
   await loadServerSettings();
   showPaymentQR();
   initChat();
+
+  // Open datums laden van server
+  await loadOpenDates();
+  checkDateStatus();
 
   // Menu laden van server
   MENU = await loadMenuFromServer();
