@@ -96,6 +96,20 @@
 
     .admin-link:hover { color: #fff; border-color: rgba(255,255,255,0.6); background: rgba(255,255,255,0.1); }
 
+    .logout-btn-header {
+      background: none;
+      border: 1px solid rgba(255,255,255,0.25);
+      color: rgba(255,255,255,0.75);
+      padding: 6px 14px;
+      border-radius: var(--radius);
+      font-size: .82rem;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .logout-btn-header:hover { color: #fff; border-color: rgba(255,255,255,0.6); background: rgba(255,255,255,0.1); }
+
     .cart-btn {
       background: var(--primary);
       border: none;
@@ -1176,6 +1190,7 @@
       🛒 Winkelwagen
       <span class="cart-badge" id="header-badge">0</span>
     </button>
+    <button class="logout-btn-header" onclick="doLogoutOrder()" title="Uitloggen">⏻ Uitloggen</button>
   </div>
 </header>
 
@@ -1335,6 +1350,17 @@
 </div>
 
 <script>
+// ── Auth check — must be logged in via index.html ─────────────────────────
+if (sessionStorage.getItem('snack_auth') !== '1') {
+  window.location.replace('/index.html');
+}
+
+function doLogoutOrder() {
+  sessionStorage.removeItem('snack_auth');
+  sessionStorage.removeItem('snack_user');
+  window.location.replace('/index.html');
+}
+
 // ── localStorage helpers ──────────────────────────────────────────────────
 
 function getTodayDate() {
@@ -2338,6 +2364,19 @@ function toggleTheme() {
 }
 
 _applyTheme(localStorage.getItem('snack_theme') || 'dark');
+
+// ── Auto-fill naam vanuit SSO ──────────────────────────────────────────────
+(function() {
+  try {
+    var userData = JSON.parse(sessionStorage.getItem('snack_user') || 'null');
+    if (userData && userData.name) {
+      var nameInput = document.getElementById('user-name');
+      if (nameInput && !nameInput.value) {
+        nameInput.value = userData.name;
+      }
+    }
+  } catch (e) { /* ignore */ }
+})();
 
 // ── Init ───────────────────────────────────────────────────────────────────
 

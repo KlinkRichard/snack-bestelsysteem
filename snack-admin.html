@@ -109,6 +109,20 @@
 
     .back-link:hover { color: #fff; border-color: rgba(255,255,255,0.6); background: rgba(255,255,255,0.1); }
 
+    .logout-btn-header {
+      background: none;
+      border: 1px solid rgba(255,255,255,0.25);
+      color: rgba(255,255,255,0.75);
+      padding: 6px 14px;
+      border-radius: var(--radius);
+      font-size: .82rem;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .logout-btn-header:hover { color: #fff; border-color: rgba(255,255,255,0.6); background: rgba(255,255,255,0.1); }
+
     .header-actions { display: flex; align-items: center; gap: 10px; }
 
     /* Theme toggle */
@@ -1001,6 +1015,7 @@
   <div class="header-actions">
     <button class="theme-toggle" id="theme-toggle-btn" onclick="toggleTheme()" title="Wissel licht/donker"></button>
     <a href="snack-order.html" class="back-link">← Terug naar bestelscherm</a>
+    <button class="logout-btn-header" onclick="doLogoutFull()" title="Uitloggen">⏻ Uitloggen</button>
   </div>
 </header>
 
@@ -1274,7 +1289,12 @@
 </div>
 
 <script>
-// ── Login / Auth ───────────────────────────────────────────────────────────
+// ── Landing page auth check — must be logged in via index.html ────────────
+if (sessionStorage.getItem('snack_auth') !== '1') {
+  window.location.replace('/index.html');
+}
+
+// ── Login / Auth (admin extra wachtwoord) ─────────────────────────────────
 
 const AUTH_KEY = 'snack_admin_pw';
 const SESSION_KEY = 'snack_admin_session';
@@ -1308,6 +1328,13 @@ function doLogout() {
   document.getElementById('login-error').textContent = '';
   document.getElementById('login-overlay').style.display = 'flex';
   setLockedSections(true);
+}
+
+function doLogoutFull() {
+  sessionStorage.removeItem(SESSION_KEY);
+  sessionStorage.removeItem('snack_auth');
+  sessionStorage.removeItem('snack_user');
+  window.location.replace('/index.html');
 }
 
 function togglePwVisibility() {
