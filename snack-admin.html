@@ -1473,13 +1473,24 @@ function getAdminToken() {
   return localStorage.getItem(ADMIN_TOKEN_KEY) || '';
 }
 
-function saveAdminToken() {
+async function saveAdminToken() {
   const val = (document.getElementById('admin-token-input').value || '').trim();
   if (!val) { document.getElementById('admin-token-input').focus(); return; }
   localStorage.setItem(ADMIN_TOKEN_KEY, val);
   document.getElementById('admin-token-input').value = '';
   updateAdminTokenStatus();
-  showToast('✓ Admin token opgeslagen');
+
+  // Also persist to server KV so it survives browser changes
+  try {
+    await fetch('/api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + val },
+      body: JSON.stringify({ adminToken: val })
+    });
+    showToast('✓ Admin token opgeslagen (lokaal + server)');
+  } catch (e) {
+    showToast('✓ Admin token lokaal opgeslagen (server sync mislukt)');
+  }
 }
 
 function toggleAdminTokenVisibility() {
@@ -2838,8 +2849,19 @@ if (isLoggedIn()) {
   setTimeout(() => document.getElementById('login-password').focus(), 100);
 }
 
-// Server-gerelateerde UI laden
-updateAdminTokenStatus();
+// Server-gerelateerde UI laden — load admin token from KV if not in localStorage
+(async function() {
+  if (!getAdminToken()) {
+    try {
+      var resp = await fetch('/api/settings?key=adminToken');
+      var data = await resp.json();
+      if (data.adminToken) {
+        localStorage.setItem(ADMIN_TOKEN_KEY, data.adminToken);
+      }
+    } catch (e) { /* ignore */ }
+  }
+  updateAdminTokenStatus();
+})();
 loadQRPreview();
 loadAdminApiKeyStatus();
 loadSSOSettings();

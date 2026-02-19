@@ -25,6 +25,11 @@ module.exports = async function handler(req, res) {
         return res.json({ apiKey: apiKey || '' });
       }
 
+      if (keyParam === 'adminToken') {
+        const savedToken = await kv.get('admin_token_saved');
+        return res.json({ adminToken: savedToken || '' });
+      }
+
       if (keyParam === 'sso') {
         const [ssoEnabled, ssoClientId, ssoTenantId, ssoAllowedDomain] = await Promise.all([
           kv.get('sso_enabled'),
@@ -70,8 +75,12 @@ module.exports = async function handler(req, res) {
   // ── POST: save settings ───────────────────────────────────────────────────
   if (req.method === 'POST') {
     try {
-      const { qr, apiKey, ssoEnabled, ssoClientId, ssoTenantId, ssoAllowedDomain } = req.body || {};
+      const { qr, apiKey, adminToken, ssoEnabled, ssoClientId, ssoTenantId, ssoAllowedDomain } = req.body || {};
       const promises = [];
+
+      if (adminToken !== undefined) {
+        promises.push(kv.set('admin_token_saved', adminToken));
+      }
 
       if (qr !== undefined) {
         promises.push(kv.set('payment_qr', qr));
