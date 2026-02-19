@@ -799,10 +799,58 @@
     html { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
 
     @media (max-width: 680px) {
+      .admin-container { padding: 12px 8px; }
       .qr-manager { flex-direction: column; }
-      .section-header { flex-direction: column; align-items: flex-start; }
+      .section-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+      .section-header > div { width: 100%; }
       table { font-size: .78rem; }
       thead th, tbody td { padding: 8px 10px; }
+
+      /* Date header mobiel-vriendelijk */
+      .date-header {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 10px 12px;
+        gap: 8px;
+      }
+      .date-header-left {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+        width: 100%;
+      }
+      .date-actions {
+        width: 100%;
+        gap: 6px;
+      }
+      .date-actions button {
+        flex: 1;
+        min-width: 0;
+        justify-content: center;
+        text-align: center;
+      }
+      .btn-close-date, .btn-reopen-date, .btn-delete-date {
+        padding: 0 8px;
+        height: 36px;
+        font-size: .78rem;
+      }
+      .date-label { font-size: 13px; }
+      .date-meta { font-size: .75rem; }
+
+      /* Bestellingen header knoppen */
+      .page-title { font-size: 1.1rem; }
+      header { padding: 0 12px; height: 50px; }
+      header .logo { font-size: 1.1rem; }
+      .back-link { font-size: .72rem; padding: 4px 10px; }
+
+      /* Aggregate bar */
+      .aggregate-bar { font-size: .78rem; padding: 6px 12px; }
+
+      /* Stats row */
+      .stats-row { gap: 6px; padding: 8px; }
+      .stat-card { min-width: 80px; padding: 10px 8px; }
+      .stat-value { font-size: 1.1rem; }
+      .stat-label { font-size: .65rem; }
     }
   </style>
 </head>
@@ -1351,7 +1399,16 @@ async function openDateOnServer(dateStr) {
 
 async function closeDateOnServer(dateStr) {
   try {
-    var data = await apiCall('DELETE', { key: null }, '/api/dates?date=' + encodeURIComponent(dateStr));
+    var url = '/api/dates?date=' + encodeURIComponent(dateStr);
+    var token = getAdminToken();
+    var resp = await fetch(url, {
+      method: 'DELETE',
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    if (!resp.ok) {
+      var err = await resp.json().catch(function() { return {}; });
+      throw new Error(err.error || 'Server fout');
+    }
     _openDates = _openDates.filter(function(d) { return d !== dateStr; });
     showToast('Datum ' + dateStr + ' gesloten');
   } catch (err) {
@@ -1382,7 +1439,11 @@ function deleteDate(dateStr) {
   var orders = getOrders().filter(function(o) { return o.date !== dateStr; });
   saveOrders(orders);
   // Also remove from open dates on server
-  apiCall('DELETE', { key: null }, '/api/dates?date=' + encodeURIComponent(dateStr)).catch(function() {});
+  var token = getAdminToken();
+  fetch('/api/dates?date=' + encodeURIComponent(dateStr), {
+    method: 'DELETE',
+    headers: { 'Authorization': 'Bearer ' + token }
+  }).catch(function() {});
   _openDates = _openDates.filter(function(d) { return d !== dateStr; });
   renderOrders();
 }
@@ -1393,7 +1454,11 @@ function deleteAllOrders() {
   if (!confirm('Weet je zeker dat je ALLE ' + orders.length + ' bestellingen wilt verwijderen?\n\nDit kan niet ongedaan worden gemaakt.')) return;
   localStorage.removeItem('snack_orders');
   // Also clear all open dates on server
-  apiCall('DELETE', { key: null }, '/api/dates?date=all').catch(function() {});
+  var token = getAdminToken();
+  fetch('/api/dates?date=all', {
+    method: 'DELETE',
+    headers: { 'Authorization': 'Bearer ' + token }
+  }).catch(function() {});
   _openDates = [];
   renderOrders();
 }
