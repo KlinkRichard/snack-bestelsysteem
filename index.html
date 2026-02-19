@@ -278,18 +278,14 @@
         };
 
         _msalInstance = new msal.PublicClientApplication(msalConfig);
-        console.log('[SSO] MSAL initialized, calling handleRedirectPromise...');
-        console.log('[SSO] Current URL:', window.location.href);
 
         // Handle redirect response — this MUST run on page load to catch the redirect back from Microsoft
         _msalInstance.handleRedirectPromise().then(function(response) {
-          console.log('[SSO] handleRedirectPromise resolved:', response ? 'GOT RESPONSE' : 'null (no redirect)');
           if (response && response.account) {
-            console.log('[SSO] Account:', response.account.username);
             handleMicrosoftResponse(response.account);
           }
         }).catch(function(err) {
-          console.error('[SSO] handleRedirectPromise error:', err);
+          console.error('MSAL redirect error:', err);
         });
       } catch (err) {
         console.error('MSAL init error:', err);
