@@ -7,6 +7,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+  <!-- MSAL.js for Microsoft SSO -->
+  <script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -44,7 +46,7 @@
       transition: border-color .15s;
     }
     #gate input:focus { border-color: #1D1D5F; }
-    #gate button {
+    #gate .pw-btn {
       width: 100%;
       height: 44px;
       background: #1D1D5F;
@@ -57,12 +59,56 @@
       cursor: pointer;
       transition: background .15s;
     }
-    #gate button:hover { background: #151545; }
+    #gate .pw-btn:hover { background: #151545; }
     #gate .error {
       color: #CD0003;
       font-size: .85rem;
       margin-top: 10px;
       min-height: 20px;
+    }
+
+    /* ── Microsoft SSO button ── */
+    .ms-login-btn {
+      width: 100%;
+      height: 48px;
+      background: #0078d4;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      font-size: 1rem;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: background .15s;
+      margin-bottom: 4px;
+    }
+    .ms-login-btn:hover { background: #106ebe; }
+    .ms-login-btn:disabled { opacity: .6; cursor: not-allowed; }
+    .ms-login-btn svg { width: 20px; height: 20px; flex-shrink: 0; }
+
+    .sso-divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 16px 0;
+      color: #737373;
+      font-size: .82rem;
+    }
+    .sso-divider::before, .sso-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: #E5E5E5;
+    }
+
+    .sso-loading {
+      color: #737373;
+      font-size: .85rem;
+      padding: 8px 0;
     }
 
     /* ── Main menu (shown after login) ── */
@@ -103,6 +149,12 @@
       text-decoration: underline;
     }
     .logout:hover { color: #191919; }
+
+    .user-info {
+      font-size: .85rem;
+      color: #737373;
+      margin-top: 8px;
+    }
   </style>
 </head>
 <body>
@@ -111,11 +163,25 @@
   <div id="gate">
     <div class="logo">🍟</div>
     <h1>AZERTY Snacks</h1>
-    <p>Voer het wachtwoord in om verder te gaan</p>
-    <input type="password" id="pw-input" placeholder="Wachtwoord"
-           autocomplete="current-password"
-           onkeydown="if(event.key==='Enter') checkPassword()" />
-    <button onclick="checkPassword()">Inloggen</button>
+    <p id="gate-subtitle">Voer het wachtwoord in om verder te gaan</p>
+
+    <!-- Microsoft SSO (hidden by default, shown when SSO enabled) -->
+    <div id="sso-section" style="display:none;">
+      <button class="ms-login-btn" id="ms-login-btn" onclick="doMicrosoftLogin()">
+        <svg viewBox="0 0 21 21" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="1" width="9" height="9" fill="#f25022"/><rect x="11" y="1" width="9" height="9" fill="#7fba00"/><rect x="1" y="11" width="9" height="9" fill="#00a4ef"/><rect x="11" y="11" width="9" height="9" fill="#ffb900"/></svg>
+        Inloggen met Microsoft
+      </button>
+      <div class="sso-divider">of</div>
+    </div>
+
+    <!-- Password login (always present as fallback) -->
+    <div id="pw-section">
+      <input type="password" id="pw-input" placeholder="Wachtwoord"
+             autocomplete="current-password"
+             onkeydown="if(event.key==='Enter') checkPassword()" />
+      <button class="pw-btn" onclick="checkPassword()">Inloggen</button>
+    </div>
+
     <div class="error" id="pw-error"></div>
   </div>
 
@@ -128,17 +194,159 @@
       <a href="/snack-order.html" class="btn btn-order">🛒 Snacks bestellen</a>
       <a href="/snack-admin.html" class="btn btn-admin">⚙️ Beheer</a>
     </div>
+    <div class="user-info" id="user-info"></div>
     <button class="logout" onclick="logout()">Uitloggen</button>
   </div>
 
   <script>
-    const SESSION_KEY = 'snack_auth';
-    const PASSWORD    = 'azerty';
+    var SESSION_KEY = 'snack_auth';
+    var USER_KEY    = 'snack_user';
+    var PASSWORD    = 'azerty';
+
+    // ── SSO Config ──────────────────────────────────────────────────────────
+    var _ssoConfig = null;
+    var _msalInstance = null;
+
+    async function loadSSOConfig() {
+      try {
+        var resp = await fetch('/api/settings?key=sso');
+        var data = await resp.json();
+        _ssoConfig = {
+          enabled: !!data.ssoEnabled,
+          clientId: data.ssoClientId || '',
+          tenantId: data.ssoTenantId || '',
+          allowedDomain: (data.ssoAllowedDomain || '').toLowerCase()
+        };
+      } catch (e) {
+        console.warn('Kon SSO config niet laden:', e);
+        _ssoConfig = { enabled: false, clientId: '', tenantId: '', allowedDomain: '' };
+      }
+
+      // Show/hide SSO button
+      var ssoSection = document.getElementById('sso-section');
+      var subtitle = document.getElementById('gate-subtitle');
+
+      if (_ssoConfig.enabled && _ssoConfig.clientId && _ssoConfig.tenantId) {
+        ssoSection.style.display = 'block';
+        subtitle.textContent = 'Log in met je Microsoft-account of wachtwoord';
+        initMSAL();
+      } else {
+        ssoSection.style.display = 'none';
+        subtitle.textContent = 'Voer het wachtwoord in om verder te gaan';
+      }
+    }
+
+    function initMSAL() {
+      if (!_ssoConfig || !_ssoConfig.clientId || !_ssoConfig.tenantId) return;
+      if (!window.msal) {
+        console.warn('MSAL.js niet geladen');
+        return;
+      }
+
+      try {
+        var msalConfig = {
+          auth: {
+            clientId: _ssoConfig.clientId,
+            authority: 'https://login.microsoftonline.com/' + _ssoConfig.tenantId,
+            redirectUri: window.location.origin + '/index.html',
+          },
+          cache: {
+            cacheLocation: 'sessionStorage',
+            storeAuthStateInCookie: false,
+          }
+        };
+
+        _msalInstance = new msal.PublicClientApplication(msalConfig);
+
+        // Handle redirect response (if using redirect flow)
+        _msalInstance.handleRedirectPromise().then(function(response) {
+          if (response && response.account) {
+            handleMicrosoftResponse(response.account);
+          }
+        }).catch(function(err) {
+          console.error('MSAL redirect error:', err);
+        });
+      } catch (err) {
+        console.error('MSAL init error:', err);
+      }
+    }
+
+    async function doMicrosoftLogin() {
+      if (!_msalInstance) {
+        document.getElementById('pw-error').textContent = 'SSO is niet correct geconfigureerd. Neem contact op met de beheerder.';
+        return;
+      }
+
+      var loginBtn = document.getElementById('ms-login-btn');
+      loginBtn.disabled = true;
+      loginBtn.innerHTML = 'Bezig met inloggen...';
+
+      try {
+        var loginRequest = {
+          scopes: ['openid', 'profile', 'email'],
+          prompt: 'select_account'
+        };
+
+        var response = await _msalInstance.loginPopup(loginRequest);
+
+        if (response && response.account) {
+          handleMicrosoftResponse(response.account);
+        }
+      } catch (err) {
+        console.error('Microsoft login error:', err);
+        var errorEl = document.getElementById('pw-error');
+
+        if (err.errorCode === 'user_cancelled' || err.errorMessage && err.errorMessage.indexOf('cancelled') !== -1) {
+          errorEl.textContent = 'Inloggen geannuleerd.';
+        } else if (err.errorCode === 'popup_window_error') {
+          errorEl.textContent = 'Popup geblokkeerd — sta popups toe voor deze site.';
+        } else {
+          errorEl.textContent = 'Fout bij Microsoft login: ' + (err.errorMessage || err.message || 'Onbekende fout');
+        }
+      } finally {
+        loginBtn.disabled = false;
+        loginBtn.innerHTML = '<svg viewBox="0 0 21 21" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="1" width="9" height="9" fill="#f25022"/><rect x="11" y="1" width="9" height="9" fill="#7fba00"/><rect x="1" y="11" width="9" height="9" fill="#00a4ef"/><rect x="11" y="11" width="9" height="9" fill="#ffb900"/></svg> Inloggen met Microsoft';
+      }
+    }
+
+    function handleMicrosoftResponse(account) {
+      // Get email from account
+      var email = (account.username || '').toLowerCase();
+      var name = account.name || email;
+
+      if (!email) {
+        document.getElementById('pw-error').textContent = 'Kon geen e-mailadres ophalen uit je Microsoft-account.';
+        return;
+      }
+
+      // Check domain
+      if (_ssoConfig.allowedDomain) {
+        var domain = email.split('@')[1] || '';
+        if (domain !== _ssoConfig.allowedDomain) {
+          document.getElementById('pw-error').textContent =
+            'Het domein @' + domain + ' is niet toegestaan. Alleen @' + _ssoConfig.allowedDomain + ' mag inloggen.';
+
+          // Sign out the wrong account from MSAL cache
+          if (_msalInstance) {
+            _msalInstance.logout({ account: account, onRedirectNavigate: function() { return false; } }).catch(function() {});
+          }
+          return;
+        }
+      }
+
+      // Success — set session
+      sessionStorage.setItem(SESSION_KEY, '1');
+      sessionStorage.setItem(USER_KEY, JSON.stringify({ email: email, name: name }));
+      showMenu();
+    }
+
+    // ── Password login ──────────────────────────────────────────────────────
 
     function checkPassword() {
-      const val = document.getElementById('pw-input').value;
+      var val = document.getElementById('pw-input').value;
       if (val === PASSWORD) {
         sessionStorage.setItem(SESSION_KEY, '1');
+        sessionStorage.removeItem(USER_KEY);
         showMenu();
       } else {
         document.getElementById('pw-error').textContent = 'Onjuist wachtwoord, probeer opnieuw.';
@@ -147,22 +355,59 @@
       }
     }
 
+    // ── Menu / Logout ───────────────────────────────────────────────────────
+
     function showMenu() {
       document.getElementById('gate').style.display = 'none';
       document.getElementById('menu').style.display = 'block';
+
+      // Show user info if logged in via SSO
+      var userInfo = document.getElementById('user-info');
+      try {
+        var userData = JSON.parse(sessionStorage.getItem(USER_KEY) || 'null');
+        if (userData && userData.email) {
+          userInfo.textContent = 'Ingelogd als ' + userData.name + ' (' + userData.email + ')';
+        } else {
+          userInfo.textContent = '';
+        }
+      } catch (e) {
+        userInfo.textContent = '';
+      }
     }
 
     function logout() {
+      var wasSSO = !!sessionStorage.getItem(USER_KEY);
+
       sessionStorage.removeItem(SESSION_KEY);
+      sessionStorage.removeItem(USER_KEY);
       document.getElementById('menu').style.display = 'none';
       document.getElementById('gate').style.display = 'block';
       document.getElementById('pw-input').value = '';
       document.getElementById('pw-error').textContent = '';
+
+      // If logged in via Microsoft, also sign out from MSAL
+      if (wasSSO && _msalInstance) {
+        var accounts = _msalInstance.getAllAccounts();
+        if (accounts.length > 0) {
+          _msalInstance.logout({
+            account: accounts[0],
+            onRedirectNavigate: function() { return false; }
+          }).catch(function() {});
+        }
+      }
     }
 
-    // Auto-show menu if already authenticated this session
-    if (sessionStorage.getItem(SESSION_KEY) === '1') showMenu();
-    else document.getElementById('pw-input').focus();
+    // ── Init ────────────────────────────────────────────────────────────────
+
+    // Check if already authenticated this session
+    if (sessionStorage.getItem(SESSION_KEY) === '1') {
+      showMenu();
+    } else {
+      document.getElementById('pw-input').focus();
+    }
+
+    // Load SSO config from server (async, won't block page)
+    loadSSOConfig();
   </script>
 </body>
 </html>

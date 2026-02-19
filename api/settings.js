@@ -25,6 +25,21 @@ module.exports = async function handler(req, res) {
         return res.json({ apiKey: apiKey || '' });
       }
 
+      if (keyParam === 'sso') {
+        const [ssoEnabled, ssoClientId, ssoTenantId, ssoAllowedDomain] = await Promise.all([
+          kv.get('sso_enabled'),
+          kv.get('sso_client_id'),
+          kv.get('sso_tenant_id'),
+          kv.get('sso_allowed_domain'),
+        ]);
+        return res.json({
+          ssoEnabled: !!ssoEnabled,
+          ssoClientId: ssoClientId || '',
+          ssoTenantId: ssoTenantId || '',
+          ssoAllowedDomain: ssoAllowedDomain || '',
+        });
+      }
+
       // Default: return both (apiKey only as boolean for public)
       const [qr, apiKey] = await Promise.all([
         kv.get('payment_qr'),
@@ -55,7 +70,7 @@ module.exports = async function handler(req, res) {
   // ── POST: save settings ───────────────────────────────────────────────────
   if (req.method === 'POST') {
     try {
-      const { qr, apiKey } = req.body || {};
+      const { qr, apiKey, ssoEnabled, ssoClientId, ssoTenantId, ssoAllowedDomain } = req.body || {};
       const promises = [];
 
       if (qr !== undefined) {
@@ -63,6 +78,18 @@ module.exports = async function handler(req, res) {
       }
       if (apiKey !== undefined) {
         promises.push(kv.set('snack_api_key', apiKey));
+      }
+      if (ssoEnabled !== undefined) {
+        promises.push(kv.set('sso_enabled', ssoEnabled));
+      }
+      if (ssoClientId !== undefined) {
+        promises.push(kv.set('sso_client_id', ssoClientId));
+      }
+      if (ssoTenantId !== undefined) {
+        promises.push(kv.set('sso_tenant_id', ssoTenantId));
+      }
+      if (ssoAllowedDomain !== undefined) {
+        promises.push(kv.set('sso_allowed_domain', ssoAllowedDomain));
       }
 
       await Promise.all(promises);
@@ -87,7 +114,17 @@ module.exports = async function handler(req, res) {
         return res.json({ ok: true });
       }
 
-      return res.status(400).json({ error: 'Geef ?key=qr of ?key=apiKey op' });
+      if (keyParam === 'sso') {
+        await Promise.all([
+          kv.del('sso_enabled'),
+          kv.del('sso_client_id'),
+          kv.del('sso_tenant_id'),
+          kv.del('sso_allowed_domain'),
+        ]);
+        return res.json({ ok: true });
+      }
+
+      return res.status(400).json({ error: 'Geef ?key=qr, ?key=apiKey of ?key=sso op' });
     } catch (err) {
       console.error('DELETE /api/settings error:', err);
       return res.status(500).json({ error: 'Server fout bij verwijderen' });

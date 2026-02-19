@@ -845,6 +845,75 @@
       border: 1px solid rgba(205,0,3,.25);
     }
 
+    /* ── SSO toggle ── */
+    .sso-toggle-wrap {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .sso-toggle {
+      position: relative;
+      width: 52px;
+      height: 28px;
+      background: var(--border);
+      border-radius: 14px;
+      border: none;
+      cursor: pointer;
+      transition: background .2s;
+      flex-shrink: 0;
+    }
+    .sso-toggle.active { background: var(--green); }
+    .sso-toggle::after {
+      content: '';
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 22px;
+      height: 22px;
+      background: #fff;
+      border-radius: 50%;
+      transition: transform .2s;
+      box-shadow: 0 1px 3px rgba(0,0,0,.2);
+    }
+    .sso-toggle.active::after { transform: translateX(24px); }
+    .sso-toggle-label { font-size: .88rem; font-weight: 600; }
+
+    .sso-field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-width: 480px;
+    }
+    .sso-field label {
+      display: block;
+      font-size: .78rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      margin-bottom: 4px;
+    }
+    .sso-field input {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--text);
+      font-size: .88rem;
+      font-family: monospace;
+      outline: none;
+      transition: border-color .15s;
+    }
+    .sso-field input:focus { border-color: var(--primary); }
+    .sso-status {
+      font-size: .82rem;
+      padding: 8px 14px;
+      border-radius: var(--radius);
+      background: var(--surface2);
+      border: 1px solid var(--border);
+    }
+
     /* ── Scrollbar ── */
     html { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
 
@@ -970,6 +1039,59 @@
           <button class="btn-primary" onclick="saveAdminToken()" style="white-space:nowrap;">💾 Opslaan</button>
         </div>
         <div id="admin-token-status" style="font-size:.82rem;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Section 0b: SSO Instellingen ── -->
+  <div class="admin-section" id="section-sso">
+    <div class="section-header">
+      <h2>🔑 SSO Instellingen <span class="section-lock-badge" id="sso-lock-badge">🔒 Beveiligd</span></h2>
+    </div>
+    <div class="section-body" id="sso-section-body">
+      <div style="padding:20px 22px;display:flex;flex-direction:column;gap:18px;">
+        <p style="font-size:.88rem;color:var(--text-muted);line-height:1.6;">
+          Schakel Microsoft SSO in zodat gebruikers kunnen inloggen met hun Microsoft-account. Wanneer SSO uit staat, werkt het huidige wachtwoord.
+        </p>
+
+        <div class="sso-toggle-wrap">
+          <button class="sso-toggle" id="sso-toggle-btn" onclick="toggleSSOEnabled()" title="SSO aan/uit"></button>
+          <span class="sso-toggle-label" id="sso-toggle-label">SSO uitgeschakeld</span>
+        </div>
+
+        <div class="sso-field-group" id="sso-fields">
+          <div class="sso-field">
+            <label>Application (Client) ID</label>
+            <input type="text" id="sso-client-id" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
+          </div>
+          <div class="sso-field">
+            <label>Directory (Tenant) ID</label>
+            <input type="text" id="sso-tenant-id" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
+          </div>
+          <div class="sso-field">
+            <label>Toegestaan e-maildomein</label>
+            <input type="text" id="sso-allowed-domain" placeholder="bijv. azerty.nl" />
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn-primary" onclick="saveSSOSettings()">💾 SSO Opslaan</button>
+            <button class="btn-danger" onclick="deleteSSOSettings()" style="padding:7px 14px;font-size:.82rem;">🗑 SSO Verwijderen</button>
+          </div>
+        </div>
+
+        <div class="sso-status" id="sso-status">Status wordt geladen...</div>
+
+        <details style="font-size:.82rem;color:var(--text-muted);">
+          <summary style="cursor:pointer;font-weight:600;">📖 Azure AD configuratie instructies</summary>
+          <ol style="margin-top:10px;padding-left:20px;line-height:1.8;">
+            <li>Ga naar <strong>portal.azure.com</strong> → Microsoft Entra ID → App registraties → Nieuwe registratie</li>
+            <li>Naam: bijv. "Snack Bestelsysteem"</li>
+            <li>Accounttypen: "Alleen accounts in deze organisatiemap"</li>
+            <li>Platform toevoegen: <strong>Single-page application (SPA)</strong></li>
+            <li>Omleidings-URI: <code id="sso-redirect-uri-hint"></code></li>
+            <li>Noteer <strong>Application (client) ID</strong> en <strong>Directory (tenant) ID</strong></li>
+            <li>Vul ze hierboven in en klik "SSO Opslaan"</li>
+          </ol>
+        </details>
       </div>
     </div>
   </div>
@@ -1197,12 +1319,14 @@ function setLockedSections(locked) {
   // Section bodies
   const qrBody = document.querySelector('#section-qr .section-body');
   const apikeyBody = document.getElementById('apikey-section-body');
+  const ssoBody = document.getElementById('sso-section-body');
   const prodHeader = document.querySelector('#section-producten .section-header > div');
   const opslagRow = document.querySelector('.opslag-row');
   const prodTableWrap = document.querySelector('.producten-table-wrap');
 
   const qrBadge = document.getElementById('qr-lock-badge');
   const apikeyBadge = document.getElementById('apikey-lock-badge');
+  const ssoBadge = document.getElementById('sso-lock-badge');
   const prodBadge = document.getElementById('producten-lock-badge');
   const logoutBtn = document.getElementById('logout-btn');
   const changePwBtn = document.getElementById('change-pw-btn');
@@ -1210,22 +1334,26 @@ function setLockedSections(locked) {
   if (locked) {
     if (qrBody) { qrBody.style.filter = 'blur(4px)'; qrBody.style.pointerEvents = 'none'; }
     if (apikeyBody) { apikeyBody.style.filter = 'blur(4px)'; apikeyBody.style.pointerEvents = 'none'; }
+    if (ssoBody) { ssoBody.style.filter = 'blur(4px)'; ssoBody.style.pointerEvents = 'none'; }
     if (prodHeader) { prodHeader.style.filter = 'blur(4px)'; prodHeader.style.pointerEvents = 'none'; }
     if (opslagRow) { opslagRow.style.filter = 'blur(4px)'; opslagRow.style.pointerEvents = 'none'; }
     if (prodTableWrap) { prodTableWrap.style.filter = 'blur(4px)'; prodTableWrap.style.pointerEvents = 'none'; }
     if (qrBadge) qrBadge.style.display = '';
     if (apikeyBadge) apikeyBadge.style.display = '';
+    if (ssoBadge) ssoBadge.style.display = '';
     if (prodBadge) prodBadge.style.display = '';
     if (logoutBtn) logoutBtn.style.display = 'none';
     if (changePwBtn) changePwBtn.style.display = 'none';
   } else {
     if (qrBody) { qrBody.style.filter = ''; qrBody.style.pointerEvents = ''; }
     if (apikeyBody) { apikeyBody.style.filter = ''; apikeyBody.style.pointerEvents = ''; }
+    if (ssoBody) { ssoBody.style.filter = ''; ssoBody.style.pointerEvents = ''; }
     if (prodHeader) { prodHeader.style.filter = ''; prodHeader.style.pointerEvents = ''; }
     if (opslagRow) { opslagRow.style.filter = ''; opslagRow.style.pointerEvents = ''; }
     if (prodTableWrap) { prodTableWrap.style.filter = ''; prodTableWrap.style.pointerEvents = ''; }
     if (qrBadge) qrBadge.style.display = 'none';
     if (apikeyBadge) apikeyBadge.style.display = 'none';
+    if (ssoBadge) ssoBadge.style.display = 'none';
     if (prodBadge) prodBadge.style.display = 'none';
     if (logoutBtn) logoutBtn.style.display = '';
     if (changePwBtn) changePwBtn.style.display = '';
@@ -2534,6 +2662,126 @@ function escapeAdminHtml(str) {
     .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
+// ── SSO Instellingen beheer ────────────────────────────────────────────────
+
+var _ssoConfig = { enabled: false, clientId: '', tenantId: '', allowedDomain: '' };
+
+async function loadSSOSettings() {
+  try {
+    var data = await apiCall('GET', { key: 'sso' });
+    _ssoConfig = {
+      enabled: !!data.ssoEnabled,
+      clientId: data.ssoClientId || '',
+      tenantId: data.ssoTenantId || '',
+      allowedDomain: data.ssoAllowedDomain || ''
+    };
+  } catch (err) {
+    console.warn('Kon SSO instellingen niet laden:', err);
+  }
+  syncSSOUI();
+}
+
+function syncSSOUI() {
+  var toggleBtn = document.getElementById('sso-toggle-btn');
+  var toggleLabel = document.getElementById('sso-toggle-label');
+  var clientInput = document.getElementById('sso-client-id');
+  var tenantInput = document.getElementById('sso-tenant-id');
+  var domainInput = document.getElementById('sso-allowed-domain');
+  var statusEl = document.getElementById('sso-status');
+  var hintEl = document.getElementById('sso-redirect-uri-hint');
+
+  if (toggleBtn) {
+    if (_ssoConfig.enabled) {
+      toggleBtn.classList.add('active');
+      toggleLabel.textContent = 'SSO ingeschakeld';
+      toggleLabel.style.color = 'var(--green)';
+    } else {
+      toggleBtn.classList.remove('active');
+      toggleLabel.textContent = 'SSO uitgeschakeld';
+      toggleLabel.style.color = '';
+    }
+  }
+
+  if (clientInput) clientInput.value = _ssoConfig.clientId;
+  if (tenantInput) tenantInput.value = _ssoConfig.tenantId;
+  if (domainInput) domainInput.value = _ssoConfig.allowedDomain;
+
+  if (hintEl) {
+    hintEl.textContent = location.origin + '/index.html';
+  }
+
+  if (statusEl) {
+    if (_ssoConfig.enabled && _ssoConfig.clientId && _ssoConfig.tenantId && _ssoConfig.allowedDomain) {
+      statusEl.innerHTML = '<span style="color:var(--green);">✓ SSO actief</span> — domein: <strong>' + escapeHtml(_ssoConfig.allowedDomain) + '</strong>';
+    } else if (_ssoConfig.enabled) {
+      statusEl.innerHTML = '<span style="color:var(--red);">⚠ SSO ingeschakeld maar configuratie is onvolledig</span> — vul alle velden in.';
+    } else {
+      statusEl.textContent = 'SSO is uitgeschakeld — gebruikers loggen in met wachtwoord.';
+      statusEl.style.color = 'var(--text-muted)';
+    }
+  }
+}
+
+function toggleSSOEnabled() {
+  _ssoConfig.enabled = !_ssoConfig.enabled;
+  syncSSOUI();
+}
+
+async function saveSSOSettings() {
+  if (!getAdminToken()) {
+    alert('Stel eerst een admin token in (sectie "Server Verbinding").');
+    return;
+  }
+
+  var clientId = (document.getElementById('sso-client-id').value || '').trim();
+  var tenantId = (document.getElementById('sso-tenant-id').value || '').trim();
+  var allowedDomain = (document.getElementById('sso-allowed-domain').value || '').trim().toLowerCase();
+
+  if (_ssoConfig.enabled && (!clientId || !tenantId || !allowedDomain)) {
+    alert('Vul alle SSO-velden in (Client ID, Tenant ID en Domein) om SSO in te schakelen.');
+    return;
+  }
+
+  try {
+    await apiCall('POST', {
+      body: {
+        ssoEnabled: _ssoConfig.enabled,
+        ssoClientId: clientId,
+        ssoTenantId: tenantId,
+        ssoAllowedDomain: allowedDomain
+      }
+    });
+    _ssoConfig.clientId = clientId;
+    _ssoConfig.tenantId = tenantId;
+    _ssoConfig.allowedDomain = allowedDomain;
+    syncSSOUI();
+    showToast('✓ SSO instellingen opgeslagen');
+  } catch (err) {
+    alert('Fout bij opslaan SSO: ' + err.message);
+  }
+}
+
+async function deleteSSOSettings() {
+  if (!confirm('Weet je zeker dat je alle SSO-instellingen wilt verwijderen? SSO wordt uitgeschakeld.')) return;
+  if (!getAdminToken()) {
+    alert('Stel eerst een admin token in (sectie "Server Verbinding").');
+    return;
+  }
+  try {
+    var url = '/api/settings?key=sso';
+    var token = getAdminToken();
+    await fetch(url, {
+      method: 'DELETE',
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    _ssoConfig = { enabled: false, clientId: '', tenantId: '', allowedDomain: '' };
+    syncSSOUI();
+    showToast('SSO instellingen verwijderd');
+  } catch (err) {
+    alert('Fout bij verwijderen SSO: ' + err.message);
+  }
+}
+
 // ── Thema ──────────────────────────────────────────────────────────────────
 function _applyTheme(theme) {
   document.documentElement.classList.toggle('light', theme === 'light');
@@ -2567,6 +2815,7 @@ if (isLoggedIn()) {
 updateAdminTokenStatus();
 loadQRPreview();
 loadAdminApiKeyStatus();
+loadSSOSettings();
 
 // Menu + opslag laden van server, daarna UI renderen
 loadMenuData().then(function() {
