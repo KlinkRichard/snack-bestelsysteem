@@ -718,6 +718,56 @@
     .price-final  { color: var(--navy); font-weight: 700; }
     .price-markup { color: var(--green); font-size: .78rem; }
 
+    /* ── Editable price input ── */
+    .price-edit-input {
+      width: 72px;
+      padding: 4px 6px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--text);
+      font-size: .82rem;
+      font-weight: 600;
+      font-family: inherit;
+      text-align: right;
+      outline: none;
+      transition: border-color .15s;
+    }
+    .price-edit-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(207,74,12,0.15);
+    }
+    .price-edit-input.price-changed {
+      border-color: var(--primary);
+      background: var(--label-bg);
+    }
+
+    .price-save-indicator {
+      display: inline-block;
+      font-size: .7rem;
+      color: var(--green);
+      margin-left: 4px;
+      opacity: 0;
+      transition: opacity .3s;
+    }
+    .price-save-indicator.show { opacity: 1; }
+
+    /* ── Update timestamp ── */
+    .menu-updated-at {
+      font-size: .78rem;
+      color: var(--text-muted);
+      padding: 8px 20px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface2);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .menu-updated-at strong {
+      color: var(--text);
+      font-weight: 600;
+    }
+
     /* ── Login overlay ── */
     .login-overlay {
       position: fixed;
@@ -1009,6 +1059,11 @@
       <span style="font-size:.78rem;color:var(--text-muted);">
         Klik op <strong>%</strong> of <strong>€</strong> om te wisselen tussen percentage en vast bedrag per product.
       </span>
+    </div>
+
+    <!-- Laatste update -->
+    <div class="menu-updated-at" id="menu-updated-at" style="display:none;">
+      🕒 Laatst bijgewerkt: <strong id="menu-updated-at-text">—</strong>
     </div>
 
     <!-- Productenlijst -->
@@ -1954,17 +2009,41 @@ async function loadMenuData() {
     _menuCache = {
       menu: data.menu || MENU_DEFAULT.map(function(i) { return Object.assign({}, i); }),
       opslag: data.opslag != null ? data.opslag : 0,
-      opslagMode: data.opslagMode || 'pct'
+      opslagMode: data.opslagMode || 'pct',
+      updatedAt: data.updatedAt || null
     };
   } catch (err) {
     console.warn('Kon menu niet laden van server:', err);
     _menuCache = {
       menu: MENU_DEFAULT.map(function(i) { return Object.assign({}, i); }),
       opslag: 0,
-      opslagMode: 'pct'
+      opslagMode: 'pct',
+      updatedAt: null
     };
   }
+  showMenuUpdatedAt();
   return _menuCache;
+}
+
+function showMenuUpdatedAt() {
+  var el = document.getElementById('menu-updated-at');
+  var textEl = document.getElementById('menu-updated-at-text');
+  if (!_menuCache || !_menuCache.updatedAt) {
+    el.style.display = 'none';
+    return;
+  }
+  try {
+    var d = new Date(_menuCache.updatedAt);
+    var dag = String(d.getDate()).padStart(2, '0');
+    var maand = String(d.getMonth() + 1).padStart(2, '0');
+    var jaar = d.getFullYear();
+    var uur = String(d.getHours()).padStart(2, '0');
+    var min = String(d.getMinutes()).padStart(2, '0');
+    textEl.textContent = dag + '-' + maand + '-' + jaar + ' om ' + uur + ':' + min;
+    el.style.display = 'flex';
+  } catch (e) {
+    el.style.display = 'none';
+  }
 }
 
 function getMenu() {
@@ -1973,8 +2052,11 @@ function getMenu() {
 
 async function saveMenu(menu) {
   if (!getAdminToken()) throw new Error('Stel eerst een admin token in (sectie "Server Verbinding").');
-  await apiCall('POST', { body: { menu: menu } }, '/api/menu');
-  if (_menuCache) _menuCache.menu = menu;
+  var result = await apiCall('POST', { body: { menu: menu } }, '/api/menu');
+  if (_menuCache) {
+    _menuCache.menu = menu;
+    _menuCache.updatedAt = (result && result.updatedAt) || new Date().toISOString();
+  }
 }
 
 function getOpslag() {
@@ -1983,8 +2065,12 @@ function getOpslag() {
 
 async function saveOpslag(val) {
   if (!getAdminToken()) throw new Error('Stel eerst een admin token in (sectie "Server Verbinding").');
-  await apiCall('POST', { body: { opslag: val } }, '/api/menu');
-  if (_menuCache) _menuCache.opslag = val;
+  var result = await apiCall('POST', { body: { opslag: val } }, '/api/menu');
+  if (_menuCache) {
+    _menuCache.opslag = val;
+    _menuCache.updatedAt = (result && result.updatedAt) || new Date().toISOString();
+  }
+  showMenuUpdatedAt();
 }
 
 function getOpslagMode() {
@@ -1993,8 +2079,12 @@ function getOpslagMode() {
 
 async function saveOpslagMode(mode) {
   if (!getAdminToken()) throw new Error('Stel eerst een admin token in (sectie "Server Verbinding").');
-  await apiCall('POST', { body: { opslagMode: mode } }, '/api/menu');
-  if (_menuCache) _menuCache.opslagMode = mode;
+  var result = await apiCall('POST', { body: { opslagMode: mode } }, '/api/menu');
+  if (_menuCache) {
+    _menuCache.opslagMode = mode;
+    _menuCache.updatedAt = (result && result.updatedAt) || new Date().toISOString();
+  }
+  showMenuUpdatedAt();
 }
 
 function applyOpslag(basePrice, val) {
@@ -2063,6 +2153,8 @@ async function updateOpslag() {
 
 // ── Producten tabel renderen ──────────────────────────────────────────────
 
+var _priceEditTimer = null;
+
 function renderProducten() {
   const menu = getMenu();
   const opslag = getOpslag();
@@ -2072,18 +2164,115 @@ function renderProducten() {
   menu.forEach((item, idx) => {
     const verkoopprijs = applyOpslag(item.price, opslag);
     const meerprijs = verkoopprijs - item.price;
+    const origPrice = getOriginalPrice(item.nr);
+    const isChanged = origPrice !== null && Math.abs(item.price - origPrice) > 0.001;
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td style="color:var(--text-muted);font-size:.75rem;">${idx + 1}</td>
       <td><span class="cat-badge">${escapeHtml(item.cat)}</span></td>
       <td>${escapeHtml(item.name)}</td>
-      <td class="price-orig">${fmt(item.price)}</td>
+      <td>
+        <input type="number" class="price-edit-input${isChanged ? ' price-changed' : ''}"
+               data-idx="${idx}" value="${item.price.toFixed(2)}"
+               min="0" max="999" step="0.05"
+               onchange="handlePriceEdit(${idx}, this)"
+               onkeydown="handlePriceKeydown(event, ${idx}, this)" />
+        <span class="price-save-indicator" id="price-save-${idx}">✓</span>
+        ${isChanged ? `<br><span style="font-size:.65rem;color:var(--text-muted);">was ${fmt(origPrice)}</span>` : ''}
+      </td>
       <td>
         <span class="price-final">${fmt(verkoopprijs)}</span>
         ${meerprijs > 0.001 ? `<br><span class="price-markup">+${fmt(meerprijs)}</span>` : ''}
       </td>`;
     tbody.appendChild(tr);
   });
+}
+
+function getOriginalPrice(nr) {
+  var orig = MENU_DEFAULT.find(function(i) { return i.nr === nr; });
+  return orig ? orig.price : null;
+}
+
+function handlePriceKeydown(event, idx, input) {
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    input.blur();
+    handlePriceEdit(idx, input);
+  }
+}
+
+async function handlePriceEdit(idx, input) {
+  var newPrice = parseFloat(input.value);
+  if (isNaN(newPrice) || newPrice < 0) {
+    var menu = getMenu();
+    input.value = menu[idx].price.toFixed(2);
+    return;
+  }
+  // Round to nearest 0.05
+  newPrice = Math.round(newPrice * 20) / 20;
+  input.value = newPrice.toFixed(2);
+
+  var menu = getMenu();
+  if (Math.abs(menu[idx].price - newPrice) < 0.001) return; // no change
+
+  menu[idx].price = newPrice;
+
+  // Check if changed from original
+  var origPrice = getOriginalPrice(menu[idx].nr);
+  if (origPrice !== null && Math.abs(newPrice - origPrice) > 0.001) {
+    input.classList.add('price-changed');
+  } else {
+    input.classList.remove('price-changed');
+  }
+
+  // Update verkoop column in the same row
+  var opslag = getOpslag();
+  var verkoopprijs = applyOpslag(newPrice, opslag);
+  var meerprijs = verkoopprijs - newPrice;
+  var verkoopTd = input.closest('tr').querySelector('td:last-child');
+  verkoopTd.innerHTML =
+    '<span class="price-final">' + fmt(verkoopprijs) + '</span>' +
+    (meerprijs > 0.001 ? '<br><span class="price-markup">+' + fmt(meerprijs) + '</span>' : '');
+
+  // "was" label under input
+  var wasTxt = input.parentNode.querySelector('span[style*="font-size:.65rem"]');
+  if (origPrice !== null && Math.abs(newPrice - origPrice) > 0.001) {
+    if (!wasTxt) {
+      var br = document.createElement('br');
+      var sp = document.createElement('span');
+      sp.style.cssText = 'font-size:.65rem;color:var(--text-muted);';
+      sp.textContent = 'was ' + fmt(origPrice);
+      input.parentNode.appendChild(br);
+      input.parentNode.appendChild(sp);
+    } else {
+      wasTxt.textContent = 'was ' + fmt(origPrice);
+    }
+  } else if (wasTxt) {
+    // Remove "was" label and preceding br
+    if (wasTxt.previousElementSibling && wasTxt.previousElementSibling.tagName === 'BR') {
+      wasTxt.previousElementSibling.remove();
+    }
+    wasTxt.remove();
+  }
+
+  // Save to server with debounce
+  clearTimeout(_priceEditTimer);
+  _priceEditTimer = setTimeout(async function() {
+    try {
+      await saveMenu(menu);
+      // Show save indicator
+      var indicator = document.getElementById('price-save-' + idx);
+      if (indicator) {
+        indicator.classList.add('show');
+        setTimeout(function() { indicator.classList.remove('show'); }, 1500);
+      }
+      // Update timestamp
+      if (_menuCache) _menuCache.updatedAt = new Date().toISOString();
+      showMenuUpdatedAt();
+    } catch (err) {
+      alert('Fout bij opslaan prijs: ' + err.message);
+    }
+  }, 600);
 }
 
 // ── Export ────────────────────────────────────────────────────────────────
@@ -2168,12 +2357,13 @@ async function importJSON(content) {
   } else if (data.opslag_pct !== undefined) {
     body.opslag = data.opslag_pct;
   }
-  await apiCall('POST', { body: body }, '/api/menu');
+  var result = await apiCall('POST', { body: body }, '/api/menu');
   // Update local cache
   if (_menuCache) {
     _menuCache.menu = menu;
     if (body.opslagMode) _menuCache.opslagMode = body.opslagMode;
     if (body.opslag !== undefined) _menuCache.opslag = body.opslag;
+    _menuCache.updatedAt = (result && result.updatedAt) || new Date().toISOString();
   }
   // Update UI
   if (data.opslag_mode) {
@@ -2182,6 +2372,7 @@ async function importJSON(content) {
   } else if (data.opslag_pct !== undefined) {
     document.getElementById('opslag-input').value = data.opslag_pct;
   }
+  showMenuUpdatedAt();
   renderProducten();
   showImportSuccess(menu.length);
 }
@@ -2205,8 +2396,12 @@ async function importCSV(content) {
   });
   if (!menu.length) throw new Error('Geen producten gevonden in het CSV-bestand.');
   validateMenu(menu);
-  await apiCall('POST', { body: { menu: menu } }, '/api/menu');
-  if (_menuCache) _menuCache.menu = menu;
+  var csvResult = await apiCall('POST', { body: { menu: menu } }, '/api/menu');
+  if (_menuCache) {
+    _menuCache.menu = menu;
+    _menuCache.updatedAt = (csvResult && csvResult.updatedAt) || new Date().toISOString();
+  }
+  showMenuUpdatedAt();
   renderProducten();
   showImportSuccess(menu.length);
 }
@@ -2252,11 +2447,13 @@ async function resetMenu() {
     _menuCache = {
       menu: MENU_DEFAULT.map(function(i) { return Object.assign({}, i); }),
       opslag: 0,
-      opslagMode: 'pct'
+      opslagMode: 'pct',
+      updatedAt: null
     };
     document.getElementById('opslag-input').value = 0;
     document.getElementById('opslag-badge').textContent = 'Geen opslag';
     _syncOpslagModeUI('pct');
+    showMenuUpdatedAt();
     renderProducten();
     showToast('Menu gereset naar standaard');
   } catch (err) {

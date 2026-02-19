@@ -13,16 +13,18 @@ module.exports = async function handler(req, res) {
   // ── GET: public read ──────────────────────────────────────────────────────
   if (req.method === 'GET') {
     try {
-      const [menu, opslag, opslagMode] = await Promise.all([
+      const [menu, opslag, opslagMode, updatedAt] = await Promise.all([
         kv.get('snack_menu'),
         kv.get('snack_opslag'),
         kv.get('snack_opslag_mode'),
+        kv.get('snack_menu_updated_at'),
       ]);
 
       return res.json({
         menu: menu || null,
         opslag: opslag ?? 0,
         opslagMode: opslagMode || 'pct',
+        updatedAt: updatedAt || null,
       });
     } catch (err) {
       console.error('GET /api/menu error:', err);
@@ -52,8 +54,12 @@ module.exports = async function handler(req, res) {
         promises.push(kv.set('snack_opslag_mode', opslagMode));
       }
 
+      // Save timestamp whenever menu data changes
+      const now = new Date().toISOString();
+      promises.push(kv.set('snack_menu_updated_at', now));
+
       await Promise.all(promises);
-      return res.json({ ok: true });
+      return res.json({ ok: true, updatedAt: now });
     } catch (err) {
       console.error('POST /api/menu error:', err);
       return res.status(500).json({ error: 'Server fout bij opslaan menu' });
@@ -67,6 +73,7 @@ module.exports = async function handler(req, res) {
         kv.del('snack_menu'),
         kv.del('snack_opslag'),
         kv.del('snack_opslag_mode'),
+        kv.del('snack_menu_updated_at'),
       ]);
       return res.json({ ok: true });
     } catch (err) {
