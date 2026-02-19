@@ -2,36 +2,49 @@
 <html lang="nl">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
   <title>Snack Bestelsysteem</title>
+  <meta name="description" content="AZERTY Snacks bestelsysteem">
+  <meta name="theme-color" content="#1D1D5F">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Snacks">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
       /* ── AZERTY Brand Colors ── */
-      --primary:        #CF4A0C; /* Syracuse Orange — CTA / primary buttons */
-      --primary-dark:   #AC2700; /* hover */
-      --blue:           #0066CC; /* True Blue — links / active */
-      --navy:           #1D1D5F; /* Federal Blue — headers / secondary buttons */
+      --primary:        #CF4A0C;
+      --primary-dark:   #AC2700;
+      --blue:           #0066CC;
+      --navy:           #1D1D5F;
       --navy-dark:      #151545;
-      --green:          #008700; /* India Green — cart button */
+      --green:          #008700;
       --green-dark:     #007000;
-      --red:            #CD0003; /* Engineering Orange — errors */
-      --accent:         #CF4A0C; /* prices / highlights */
-      --text:           #191919; /* Eerie Black */
-      --text-muted:     #737373; /* Dim Gray */
+      --red:            #CD0003;
+      --accent:         #CF4A0C;
+      --text:           #191919;
+      --text-muted:     #737373;
       --text-link:      #0066CC;
-      --bg:             #F0F5FB; /* Alice Blue */
+      --bg:             #f4f6fb;
       --surface:        #ffffff;
-      --surface2:       #F0F0EF; /* White Smoke */
+      --surface2:       #f0f1f5;
       --card:           #ffffff;
-      --border:         #E5E5E5; /* Platinum */
-      --label-bg:       #FBEFE9; /* Baby Blossom */
-      --label-text:     #AC2700; /* Rust Red */
-      --radius:         4px;     /* AZERTY uses 4px on all functional elements */
-      --radius-banner:  8px;
+      --border:         #e2e5ec;
+      --label-bg:       #FBEFE9;
+      --label-text:     #AC2700;
+      --radius:         10px;
+      --radius-banner:  16px;
+      --shadow-sm:      0 1px 3px rgba(29,29,95,.06), 0 1px 2px rgba(29,29,95,.04);
+      --shadow-md:      0 4px 16px rgba(29,29,95,.08), 0 1px 3px rgba(29,29,95,.06);
+      --shadow-lg:      0 12px 40px rgba(29,29,95,.12), 0 4px 12px rgba(29,29,95,.06);
     }
+
+    @keyframes fadeInUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 
     /* Light mode = AZERTY default (white/light) */
     html.light {
@@ -57,16 +70,16 @@
 
     /* ── Header ── */
     header {
-      background: var(--navy);
+      background: linear-gradient(135deg, #1D1D5F 0%, #2a2a72 50%, #1D1D5F 100%);
       padding: 0 24px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      box-shadow: 0 4px 20px rgba(29,29,95,.25);
       position: sticky;
       top: 0;
       z-index: 100;
-      height: 60px;
+      min-height: 64px;
     }
 
     header .logo {
@@ -76,65 +89,72 @@
       letter-spacing: -0.5px;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
+      flex-shrink: 0;
     }
 
-    header .logo span { color: var(--primary); }
+    header .logo span { color: #ff7b3a; }
 
-    .header-actions { display: flex; align-items: center; gap: 12px; }
+    .header-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 1; flex-wrap: wrap; justify-content: flex-end; }
 
     .admin-link {
-      color: rgba(255,255,255,0.75);
+      color: rgba(255,255,255,0.8);
       text-decoration: none;
       font-size: .82rem;
       font-weight: 600;
-      border: 1px solid rgba(255,255,255,0.25);
-      padding: 6px 14px;
-      border-radius: var(--radius);
-      transition: all .2s;
+      border: 1px solid rgba(255,255,255,0.2);
+      padding: 7px 14px;
+      border-radius: 8px;
+      transition: all .25s;
+      white-space: nowrap;
+      backdrop-filter: blur(4px);
     }
 
-    .admin-link:hover { color: #fff; border-color: rgba(255,255,255,0.6); background: rgba(255,255,255,0.1); }
+    .admin-link:hover { color: #fff; border-color: rgba(255,255,255,0.5); background: rgba(255,255,255,0.12); }
 
     .logout-btn-header {
       background: none;
-      border: 1px solid rgba(255,255,255,0.25);
-      color: rgba(255,255,255,0.75);
-      padding: 6px 14px;
-      border-radius: var(--radius);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: rgba(255,255,255,0.8);
+      padding: 7px 12px;
+      border-radius: 8px;
       font-size: .82rem;
       font-weight: 600;
       font-family: inherit;
       cursor: pointer;
-      transition: all .2s;
+      transition: all .25s;
+      white-space: nowrap;
     }
-    .logout-btn-header:hover { color: #fff; border-color: rgba(255,255,255,0.6); background: rgba(255,255,255,0.1); }
+    .logout-btn-header:hover { color: #fff; border-color: rgba(255,255,255,0.5); background: rgba(255,255,255,0.12); }
 
     .cart-btn {
-      background: var(--primary);
+      background: linear-gradient(135deg, #CF4A0C, #e85d1f);
       border: none;
       color: #fff;
-      padding: 0 18px;
-      height: 44px;
-      border-radius: var(--radius);
+      padding: 0 16px;
+      height: 40px;
+      border-radius: 10px;
       cursor: pointer;
-      font-size: .9rem;
+      font-size: .85rem;
       font-weight: 700;
       font-family: inherit;
-      transition: background .2s;
+      transition: all .25s;
       display: flex;
       align-items: center;
       gap: 8px;
+      white-space: nowrap;
+      box-shadow: 0 2px 8px rgba(207,74,12,.3);
     }
 
-    .cart-btn:hover { background: var(--primary-dark); }
+    .cart-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(207,74,12,.4); }
+    .cart-btn:active { transform: translateY(0); }
 
     .cart-badge {
       background: #fff;
       color: var(--primary);
       border-radius: 50%;
-      width: 20px;
-      height: 20px;
+      width: 22px;
+      height: 22px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -142,15 +162,39 @@
       font-weight: 800;
     }
 
+    /* ── Header: hide text labels on small screens ── */
+    .cart-btn .cart-label { display: inline; }
+
+    @media (max-width: 700px) {
+      header { padding: 8px 12px; min-height: auto; height: auto; flex-wrap: wrap; gap: 6px; }
+      header .logo { font-size: 1.1rem; }
+      .header-actions { gap: 6px; }
+      .admin-link { padding: 5px 8px; font-size: .75rem; }
+      .cart-btn { padding: 0 10px; height: 34px; font-size: .8rem; }
+      .cart-btn .cart-label { display: none; }
+      .logout-btn-header { padding: 5px 8px; font-size: .75rem; }
+    }
+
+    @media (max-width: 420px) {
+      header { padding: 6px 8px; }
+      header .logo { font-size: 1rem; gap: 4px; }
+      .header-actions { gap: 4px; }
+      .admin-link { padding: 4px 6px; font-size: .7rem; }
+      .logout-btn-header { padding: 4px 6px; font-size: .7rem; }
+      .cart-btn { padding: 0 8px; height: 30px; font-size: .75rem; gap: 4px; }
+      .cart-badge { width: 18px; height: 18px; font-size: .65rem; }
+    }
+
     /* ── Closed banner ── */
     .closed-banner {
-      background: var(--red);
+      background: linear-gradient(135deg, #CD0003, #e52528);
       color: #fff;
       text-align: center;
-      padding: 12px 20px;
+      padding: 14px 20px;
       font-size: .9rem;
       font-weight: 700;
       display: none;
+      letter-spacing: .02em;
     }
 
     /* ── Layout ── */
@@ -173,11 +217,12 @@
       background: var(--card);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 16px 20px;
+      padding: 18px 22px;
       display: flex;
       gap: 16px;
       margin-bottom: 20px;
       flex-wrap: wrap;
+      box-shadow: var(--shadow-sm);
     }
 
     .user-bar label {
@@ -193,18 +238,18 @@
 
     .user-bar input {
       background: var(--surface2);
-      border: 1px solid var(--border);
+      border: 2px solid var(--border);
       color: var(--text);
-      border-radius: var(--radius);
-      padding: 9px 12px;
+      border-radius: 8px;
+      padding: 0 14px;
       font-size: 14px;
       font-family: inherit;
       outline: none;
-      height: 44px;
-      transition: border-color .2s;
+      height: 46px;
+      transition: all .25s;
     }
 
-    .user-bar input:focus { border-color: var(--blue); box-shadow: 0 0 0 2px rgba(0,102,204,0.15); }
+    .user-bar input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(0,102,204,0.12); background: var(--surface); }
 
     .user-bar-optional {
       font-size: .72rem;
@@ -230,18 +275,18 @@
     .search-box input {
       width: 100%;
       background: var(--surface);
-      border: 1px solid var(--border);
+      border: 2px solid var(--border);
       color: var(--text);
-      border-radius: var(--radius);
-      padding: 0 18px 0 42px;
+      border-radius: 10px;
+      padding: 0 18px 0 44px;
       font-size: 14px;
       font-family: inherit;
-      height: 44px;
+      height: 46px;
       outline: none;
-      transition: border-color .2s;
+      transition: all .25s;
     }
 
-    .search-box input:focus { border-color: var(--blue); box-shadow: 0 0 0 2px rgba(0,102,204,0.15); }
+    .search-box input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(0,102,204,0.12); background: var(--surface); }
 
     .search-box .icon {
       position: absolute;
@@ -263,33 +308,38 @@
       background: var(--surface);
       border: 1px solid var(--border);
       color: var(--text-muted);
-      padding: 0 16px;
-      height: 36px;
-      border-radius: var(--radius);
+      padding: 0 18px;
+      height: 38px;
+      border-radius: 20px;
       cursor: pointer;
-      font-size: .85rem;
+      font-size: .84rem;
       font-weight: 600;
       font-family: inherit;
-      transition: all .2s;
+      transition: all .25s;
       white-space: nowrap;
     }
 
-    .filter-tab:hover { border-color: var(--navy); color: var(--navy); }
-    .filter-tab.active { background: var(--navy); border-color: var(--navy); color: #fff; }
+    .filter-tab:hover { border-color: var(--navy); color: var(--navy); background: var(--surface2); }
+    .filter-tab.active {
+      background: linear-gradient(135deg, #1D1D5F, #302b63);
+      border-color: transparent;
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(29,29,95,.2);
+    }
 
     /* Category sections */
     .category-section { margin-bottom: 28px; }
 
     .category-title {
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 700;
       color: var(--navy);
       text-transform: uppercase;
-      letter-spacing: .06em;
-      margin-bottom: 12px;
-      padding: 6px 12px;
+      letter-spacing: .08em;
+      margin-bottom: 14px;
+      padding: 10px 16px;
       background: var(--label-bg);
-      border-left: 3px solid var(--primary);
+      border-left: 4px solid var(--primary);
       border-radius: 0 var(--radius) var(--radius) 0;
       display: flex;
       align-items: center;
@@ -307,33 +357,46 @@
       background: var(--card);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 14px;
-      transition: all .2s;
+      padding: 16px;
+      transition: all .3s cubic-bezier(.25,.8,.25,1);
       display: flex;
       flex-direction: column;
       justify-content: space-between;
       gap: 10px;
       position: relative;
       overflow: hidden;
+      box-shadow: var(--shadow-sm);
     }
 
     .item-card:not(.closed-item):hover {
       border-color: var(--navy);
-      box-shadow: 0 4px 12px rgba(29,29,95,0.12);
+      box-shadow: var(--shadow-md);
+      transform: translateY(-2px);
     }
 
-    .item-card.in-cart { border-color: var(--green); border-width: 2px; }
+    .item-card.in-cart {
+      border-color: var(--green);
+      border-width: 2px;
+      box-shadow: 0 0 0 3px rgba(0,135,0,.1), var(--shadow-sm);
+    }
     .item-card.in-cart::after {
       content: '✓';
       position: absolute;
-      top: 6px;
-      right: 8px;
-      color: var(--green);
-      font-size: .85rem;
+      top: 8px;
+      right: 10px;
+      color: #fff;
+      background: var(--green);
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: .7rem;
       font-weight: 800;
     }
 
-    .item-card.closed-item { opacity: .5; cursor: default; }
+    .item-card.closed-item { opacity: .45; cursor: default; }
 
     .item-name {
       font-size: 14px;
@@ -357,22 +420,24 @@
     }
 
     .add-btn {
-      background: var(--primary);
+      background: linear-gradient(135deg, var(--primary), #e85d1f);
       color: #fff;
       border: none;
-      border-radius: var(--radius);
-      width: 30px;
-      height: 30px;
+      border-radius: 8px;
+      width: 34px;
+      height: 34px;
       font-size: 1.2rem;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: background .15s;
+      transition: all .25s;
       flex-shrink: 0;
+      box-shadow: 0 2px 8px rgba(207,74,12,.25);
     }
 
-    .add-btn:hover { background: var(--primary-dark); }
+    .add-btn:hover { transform: scale(1.08); box-shadow: 0 4px 12px rgba(207,74,12,.35); }
+    .add-btn:active { transform: scale(0.95); }
 
     /* Quantity stepper on card */
     .qty-stepper {
@@ -422,12 +487,13 @@
     .cart-panel, .payment-qr-panel {
       background: var(--card);
       border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 20px;
+      border-radius: var(--radius-banner);
+      padding: 22px;
+      box-shadow: var(--shadow-md);
     }
 
     .panel-title {
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 700;
       color: var(--navy);
       margin-bottom: 16px;
@@ -435,7 +501,7 @@
       align-items: center;
       gap: 8px;
       text-transform: uppercase;
-      letter-spacing: .04em;
+      letter-spacing: .06em;
     }
 
     /* Cart items */
@@ -539,35 +605,37 @@
       color: var(--text-muted);
       padding: 0 14px;
       height: 36px;
-      border-radius: var(--radius);
+      border-radius: 20px;
       font-size: .82rem;
       font-family: inherit;
       cursor: pointer;
-      transition: all .2s;
+      transition: all .25s;
     }
 
-    .fooi-btn:hover { border-color: var(--primary); color: var(--primary); }
-    .fooi-btn.active { background: var(--primary); border-color: var(--primary); color: #fff; font-weight: 700; }
+    .fooi-btn:hover { border-color: var(--primary); color: var(--primary); background: var(--label-bg); }
+    .fooi-btn.active { background: linear-gradient(135deg, #CF4A0C, #e85d1f); border-color: transparent; color: #fff; font-weight: 700; box-shadow: 0 2px 8px rgba(207,74,12,.25); }
 
     /* Submit — AZERTY primary button: Syracuse Orange, 44px, radius 4px */
     .submit-btn {
       width: 100%;
-      background: var(--primary);
+      background: linear-gradient(135deg, #CF4A0C, #e85d1f);
       color: #fff;
       border: none;
-      border-radius: var(--radius);
-      height: 44px;
-      font-size: 14px;
+      border-radius: 12px;
+      height: 50px;
+      font-size: 15px;
       font-weight: 700;
       font-family: inherit;
       cursor: pointer;
-      transition: background .2s;
+      transition: all .25s;
       margin-top: 14px;
       letter-spacing: .02em;
+      box-shadow: 0 4px 16px rgba(207,74,12,.3);
     }
 
-    .submit-btn:hover { background: var(--primary-dark); }
-    .submit-btn:disabled { opacity: .4; cursor: not-allowed; background: var(--text-muted); }
+    .submit-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(207,74,12,.4); }
+    .submit-btn:active { transform: translateY(0); }
+    .submit-btn:disabled { opacity: .4; cursor: not-allowed; background: var(--text-muted); box-shadow: none; transform: none; }
 
     /* Cart button — AZERTY India Green */
     .clear-btn {
@@ -587,20 +655,37 @@
     .clear-btn:hover { color: var(--red); border-color: var(--red); }
 
     /* Payment QR Panel */
-    .payment-qr-panel { text-align: center; }
+    .payment-qr-panel {
+      text-align: center;
+      background: linear-gradient(135deg, var(--card), var(--surface2)) !important;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .payment-qr-panel::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -30%;
+      width: 200px;
+      height: 200px;
+      background: radial-gradient(circle, rgba(207,74,12,.08), transparent 70%);
+      pointer-events: none;
+    }
 
     .payment-qr-panel img {
       max-width: 100%;
-      border-radius: var(--radius-banner);
+      border-radius: 12px;
       background: #fff;
-      padding: 8px;
-      border: 1px solid var(--border);
+      padding: 12px;
+      border: 2px solid var(--border);
+      box-shadow: 0 4px 16px rgba(0,0,0,.08);
     }
 
     .qr-hint {
-      font-size: .78rem;
+      font-size: .8rem;
       color: var(--text-muted);
-      margin-top: 10px;
+      margin-top: 12px;
       line-height: 1.5;
     }
 
@@ -608,13 +693,21 @@
     .modal-overlay {
       display: none;
       position: fixed;
-      inset: 0;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 100vh;
+      height: 100dvh;
       background: rgba(29,29,95,.6);
       z-index: 999;
       align-items: center;
       justify-content: center;
       padding: 20px;
+      padding-top: calc(20px + env(safe-area-inset-top, 0px));
+      padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
       overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
     }
 
     .modal-overlay.open { display: flex; }
@@ -622,16 +715,30 @@
     .modal {
       background: var(--card);
       border: 1px solid var(--border);
-      border-radius: var(--radius-banner);
-      padding: 32px;
+      border-radius: 24px;
+      padding: 36px 28px;
       max-width: 480px;
       width: 100%;
       text-align: center;
-      box-shadow: 0 12px 40px rgba(0,0,0,0.2);
-      animation: slideUp .25s ease;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.25);
+      animation: slideUp .3s ease;
       margin: auto;
-      max-height: 90vh;
+      max-height: 80vh;
+      max-height: 80dvh;
       overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    .modal::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--green), #00b300, var(--green));
     }
 
     @keyframes slideUp {
@@ -639,8 +746,8 @@
       to   { opacity: 1; transform: translateY(0); }
     }
 
-    .modal-icon { font-size: 2.8rem; margin-bottom: 12px; }
-    .modal h2 { font-size: 1.3rem; font-weight: 700; color: var(--navy); margin-bottom: 6px; }
+    .modal-icon { font-size: 3rem; margin-bottom: 14px; }
+    .modal h2 { font-size: 1.35rem; font-weight: 700; color: var(--navy); margin-bottom: 8px; }
     .modal p { color: var(--text-muted); font-size: 14px; line-height: 1.6; }
 
     .modal-order-summary {
@@ -654,79 +761,168 @@
       line-height: 1.8;
     }
 
-    /* Payment QR in modal */
+    /* Payment QR button in modal */
     .modal-payment-qr {
       margin: 16px 0;
-      padding: 20px 16px;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
       text-align: center;
     }
 
-    .modal-payment-qr .qr-label {
-      font-size: .78rem;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: .07em;
-      margin-bottom: 12px;
-    }
-
-    .modal-payment-qr img {
-      display: block;
-      margin: 0 auto;
-      max-width: 180px;
-      width: 100%;
-      border-radius: var(--radius);
-      background: #fff;
-      padding: 10px;
-      border: 1px solid var(--border);
-    }
-
-    .modal-payment-qr .qr-sub {
-      font-size: .78rem;
-      color: var(--text-muted);
-      margin-top: 10px;
-    }
-
-    .modal-close {
-      background: var(--primary);
+    .btn-open-qr {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: linear-gradient(135deg, #1D1D5F, #302b63);
       color: #fff;
       border: none;
-      border-radius: var(--radius);
-      height: 44px;
-      padding: 0 32px;
+      border-radius: 12px;
+      height: 48px;
+      padding: 0 24px;
       font-size: 14px;
       font-weight: 700;
       font-family: inherit;
       cursor: pointer;
-      margin-top: 8px;
-      transition: background .2s;
+      transition: all .25s;
+      box-shadow: 0 2px 8px rgba(29,29,95,.2);
     }
 
-    .modal-close:hover { background: var(--primary-dark); }
+    .btn-open-qr:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(29,29,95,.3); }
+    .btn-open-qr:active { transform: translateY(0); }
+
+    /* Fullscreen QR overlay */
+    .qr-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      height: 100vh;
+      height: 100dvh;
+      background: rgba(29,29,95,.85);
+      z-index: 1100;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      padding-top: calc(20px + env(safe-area-inset-top, 0px));
+      padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+    }
+
+    .qr-overlay.open { display: flex; }
+
+    .qr-overlay-content {
+      background: var(--card);
+      border-radius: 24px;
+      padding: 40px 28px 32px;
+      text-align: center;
+      max-width: 380px;
+      width: 100%;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.35);
+      animation: slideUp .3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .qr-overlay-content::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #CF4A0C, #e85d1f, #CF4A0C);
+    }
+
+    .qr-overlay-label {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--navy);
+      margin-bottom: 20px;
+    }
+
+    .qr-overlay-content img {
+      display: block;
+      margin: 0 auto;
+      max-width: 250px;
+      width: 100%;
+      border-radius: 16px;
+      background: #fff;
+      padding: 16px;
+      border: 2px solid var(--border);
+      box-shadow: 0 4px 20px rgba(0,0,0,.08);
+    }
+
+    .qr-overlay-sub {
+      font-size: .84rem;
+      color: var(--text-muted);
+      margin-top: 14px;
+    }
+
+    .btn-payment-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: linear-gradient(135deg, #CF4A0C, #e85d1f);
+      color: #fff;
+      text-decoration: none;
+      border: none;
+      border-radius: 14px;
+      height: 52px;
+      padding: 0 28px;
+      font-size: 15px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all .25s;
+      margin-top: 16px;
+      width: 100%;
+      box-sizing: border-box;
+      box-shadow: 0 4px 16px rgba(207,74,12,.3);
+      letter-spacing: .01em;
+    }
+
+    .btn-payment-link:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(207,74,12,.4); }
+    .btn-payment-link:active { transform: translateY(0); }
+
+    .modal-close {
+      background: linear-gradient(135deg, #1D1D5F, #302b63);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      height: 48px;
+      padding: 0 36px;
+      font-size: 14px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      margin-top: 12px;
+      transition: all .25s;
+    }
+
+    .modal-close:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(29,29,95,.3); }
+    .modal-close:active { transform: translateY(0); }
 
     /* ── Mobile cart drawer ── */
     .mobile-cart-fab {
       display: none;
       position: fixed;
-      bottom: 24px;
-      right: 24px;
+      bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+      right: 20px;
       z-index: 90;
-      background: var(--primary);
+      background: linear-gradient(135deg, #CF4A0C, #e85d1f);
       color: #fff;
       border: none;
-      border-radius: var(--radius);
-      padding: 0 20px;
-      height: 44px;
+      border-radius: 14px;
+      padding: 0 22px;
+      height: 50px;
       font-size: .9rem;
       font-weight: 700;
       font-family: inherit;
       cursor: pointer;
-      box-shadow: 0 4px 12px rgba(207,74,12,0.4);
+      box-shadow: 0 6px 20px rgba(207,74,12,0.45);
       gap: 8px;
       align-items: center;
+      transition: all .25s;
     }
+
+    .mobile-cart-fab:active { transform: scale(0.95); }
 
     /* ── Responsive ── */
     @media (max-width: 900px) {
@@ -743,12 +939,12 @@
 
     /* Theme toggle */
     .theme-toggle {
-      background: rgba(255,255,255,0.12);
-      border: 1px solid rgba(255,255,255,0.25);
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
       color: #fff;
-      border-radius: var(--radius);
-      width: 36px;
-      height: 36px;
+      border-radius: 10px;
+      width: 38px;
+      height: 38px;
       font-size: 1rem;
       cursor: pointer;
       display: flex;
@@ -762,20 +958,69 @@
 
     /* Dark mode overrides */
     html:not(.light) {
-      --bg: #1a1a2e;
-      --surface: #16213e;
-      --surface2: #0f3460;
-      --card: #1e2a45;
-      --text: #eaeaea;
-      --text-muted: #9aa3b2;
-      --border: rgba(255,255,255,0.10);
-      --navy: #4a6fa5;
-      --navy-dark: #3a5f95;
-      --label-bg: rgba(207,74,12,0.12);
-      --label-text: #f5a623;
+      --bg: #0f1120;
+      --surface: #1a1d35;
+      --surface2: #1e2240;
+      --card: #1c2038;
+      --text: #e8eaf0;
+      --text-muted: #8b92a8;
+      --border: rgba(255,255,255,0.08);
+      --navy: #5a7ec0;
+      --navy-dark: #4a6faa;
+      --label-bg: rgba(207,74,12,0.15);
+      --label-text: #ff9f5a;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,.2);
+      --shadow-md: 0 4px 16px rgba(0,0,0,.25);
+      --shadow-lg: 0 12px 40px rgba(0,0,0,.35);
     }
 
-    html:not(.light) .overview-tab-bar { background: rgba(0,0,0,.2); }
+    html:not(.light) header {
+      background: linear-gradient(135deg, #141630 0%, #1c2048 50%, #141630 100%);
+      box-shadow: 0 4px 20px rgba(0,0,0,.4);
+    }
+
+    html:not(.light) .item-card {
+      border-color: rgba(255,255,255,.06);
+    }
+
+    html:not(.light) .item-card:not(.closed-item):hover {
+      border-color: rgba(90,126,192,.4);
+      box-shadow: 0 4px 20px rgba(0,0,0,.3);
+    }
+
+    html:not(.light) .overview-tab-bar { background: rgba(0,0,0,.3); }
+
+    html:not(.light) .overview-card {
+      border-color: rgba(255,255,255,.06);
+    }
+
+    html:not(.light) .payment-qr-panel {
+      background: linear-gradient(135deg, #1c2038, #252a4a);
+      border-color: rgba(255,255,255,.06);
+    }
+
+    html:not(.light) .cart-panel {
+      border-color: rgba(255,255,255,.06);
+    }
+
+    html:not(.light) .filter-tab {
+      background: var(--surface);
+      border-color: rgba(255,255,255,.08);
+    }
+
+    html:not(.light) .filter-tab.active {
+      background: var(--navy);
+      border-color: var(--navy);
+    }
+
+    html:not(.light) .modal {
+      background: var(--card);
+      border-color: rgba(255,255,255,.08);
+    }
+
+    html:not(.light) .qr-overlay-content {
+      background: var(--card);
+    }
 
     /* Scrollbar */
     html { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
@@ -790,46 +1035,47 @@
     .overview-card {
       background: var(--card);
       border: 1px solid var(--border);
-      border-radius: var(--radius);
+      border-radius: var(--radius-banner);
       overflow: hidden;
+      box-shadow: var(--shadow-md);
     }
 
     .overview-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 14px 22px;
+      padding: 16px 22px;
       border-bottom: 1px solid var(--border);
       gap: 12px;
       flex-wrap: wrap;
-      background: var(--navy);
+      background: linear-gradient(135deg, #1D1D5F 0%, #2a2a72 100%);
     }
 
     .overview-header h2 {
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 700;
       color: #fff;
       display: flex;
       align-items: center;
       gap: 8px;
       text-transform: uppercase;
-      letter-spacing: .04em;
+      letter-spacing: .06em;
     }
 
     .overview-refresh-btn {
-      background: rgba(255,255,255,0.15);
-      border: 1px solid rgba(255,255,255,0.3);
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.25);
       color: #fff;
-      border-radius: var(--radius);
-      padding: 0 14px;
-      height: 32px;
+      border-radius: 8px;
+      padding: 0 16px;
+      height: 36px;
       font-size: .82rem;
       font-family: inherit;
       cursor: pointer;
-      transition: all .2s;
+      transition: all .25s;
     }
 
-    .overview-refresh-btn:hover { background: rgba(255,255,255,0.25); }
+    .overview-refresh-btn:hover { background: rgba(255,255,255,0.22); }
 
     /* Date tabs */
     .overview-tab-bar {
@@ -935,13 +1181,96 @@
       padding: 32px 0;
     }
 
+    /* ── Overview mobile responsive ── */
+    @media (max-width: 500px) {
+      .overview-section {
+        padding: 0 8px;
+        margin-bottom: 24px;
+      }
+
+      .overview-header {
+        padding: 10px 14px;
+      }
+
+      .overview-header h2 {
+        font-size: 12px;
+      }
+
+      .overview-refresh-btn {
+        height: 36px;
+        padding: 0 12px;
+        font-size: .78rem;
+      }
+
+      .overview-tab-bar {
+        padding: 0 8px;
+      }
+
+      .overview-tab-btn {
+        padding: 10px 10px;
+        font-size: .8rem;
+      }
+
+      .overview-body {
+        padding: 10px 12px;
+      }
+
+      .ov-row {
+        flex-direction: column;
+        gap: 6px;
+        padding: 12px 0;
+      }
+
+      .ov-row-left {
+        width: 100%;
+      }
+
+      .ov-row-right {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        gap: 8px;
+      }
+
+      .ov-name {
+        font-size: .92rem;
+      }
+
+      .ov-items {
+        font-size: .82rem;
+        line-height: 1.6;
+      }
+
+      .ov-total {
+        font-size: .92rem;
+      }
+
+      .ov-time {
+        font-size: .76rem;
+      }
+
+      .ov-delete-btn {
+        padding: 6px 14px;
+        font-size: .78rem;
+        min-height: 36px;
+        display: flex;
+        align-items: center;
+      }
+
+      .ov-closed-tag {
+        font-size: .76rem;
+        padding: 4px 10px;
+      }
+    }
+
     /* ── Chat widget ── */
     .chat-fab {
       position: fixed;
-      bottom: 90px;
-      right: 24px;
+      bottom: calc(90px + env(safe-area-inset-bottom, 0px));
+      right: 18px;
       z-index: 150;
-      background: var(--navy);
+      background: linear-gradient(135deg, #1D1D5F, #302b63);
       color: #fff;
       border: none;
       border-radius: 50%;
@@ -949,22 +1278,26 @@
       height: 52px;
       font-size: 1.4rem;
       cursor: pointer;
-      box-shadow: 0 4px 16px rgba(29,29,95,0.4);
+      box-shadow: 0 6px 20px rgba(29,29,95,0.45);
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: transform .2s, background .2s;
+      transition: all .25s;
     }
 
-    .chat-fab:hover { background: var(--navy-dark); transform: scale(1.08); }
+    .chat-fab:hover { transform: scale(1.1); box-shadow: 0 8px 28px rgba(29,29,95,0.5); }
+    .chat-fab:active { transform: scale(0.95); }
 
     @media (min-width: 901px) {
-      .chat-fab { bottom: 32px; }
+      .chat-fab { bottom: 32px; right: 24px; width: 52px; height: 52px; font-size: 1.4rem; }
     }
 
     .chat-overlay {
       position: fixed;
-      inset: 0;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
       background: rgba(29,29,95,.35);
       display: none;
       z-index: 199;
@@ -976,7 +1309,7 @@
       position: fixed;
       right: 0;
       top: 0;
-      height: 100vh;
+      bottom: 0;
       width: min(400px, 100vw);
       z-index: 200;
       background: var(--card);
@@ -986,6 +1319,7 @@
       transform: translateX(100%);
       transition: transform .3s ease;
       box-shadow: -4px 0 24px rgba(0,0,0,.12);
+      /* iOS: use top+bottom instead of height to avoid Safari toolbar issues */
     }
 
     .chat-panel.open { transform: translateX(0); }
@@ -995,7 +1329,9 @@
       align-items: center;
       justify-content: space-between;
       padding: 0 18px;
-      height: 56px;
+      padding-top: env(safe-area-inset-top, 0px);
+      min-height: 56px;
+      height: calc(56px + env(safe-area-inset-top, 0px));
       border-bottom: 1px solid var(--border);
       background: var(--navy);
       flex-shrink: 0;
@@ -1015,17 +1351,19 @@
       border: none;
       color: #fff;
       border-radius: var(--radius);
-      width: 30px;
-      height: 30px;
-      font-size: .85rem;
+      width: 44px;
+      height: 44px;
+      font-size: 1.1rem;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
       transition: background .15s;
+      -webkit-tap-highlight-color: transparent;
     }
 
     .chat-close-btn:hover { background: rgba(255,255,255,0.3); }
+    .chat-close-btn:active { background: rgba(255,255,255,0.4); }
 
     /* Setup screen */
     .chat-setup {
@@ -1134,6 +1472,7 @@
       align-items: flex-end;
       gap: 8px;
       padding: 12px 14px;
+      padding-bottom: max(12px, env(safe-area-inset-bottom, 12px));
       border-top: 1px solid var(--border);
       flex-shrink: 0;
       background: var(--card);
@@ -1145,7 +1484,7 @@
       border: 1px solid var(--border);
       border-radius: var(--radius);
       color: var(--text);
-      font-size: 14px;
+      font-size: 16px; /* Must be >= 16px to prevent iOS Safari auto-zoom */
       font-family: inherit;
       padding: 9px 12px;
       outline: none;
@@ -1187,7 +1526,7 @@
     <button class="theme-toggle" id="theme-toggle-btn" onclick="toggleTheme()" title="Wissel licht/donker"></button>
     <a href="snack-admin.html" class="admin-link">⚙ Beheer</a>
     <button class="cart-btn" onclick="scrollToCart()">
-      🛒 Winkelwagen
+      🛒 <span class="cart-label">Winkelwagen</span>
       <span class="cart-badge" id="header-badge">0</span>
     </button>
     <button class="logout-btn-header" onclick="doLogoutOrder()" title="Uitloggen">⏻ Uitloggen</button>
@@ -1273,11 +1612,14 @@
         <button class="clear-btn" onclick="clearCart()">🗑 Winkelwagen legen</button>
       </div>
 
-      <!-- Payment QR panel (shown only when admin has uploaded a QR) -->
+      <!-- Payment QR panel (shown only when admin has uploaded a QR or payment link) -->
       <div class="payment-qr-panel" id="payment-qr-panel" style="display:none;">
         <div class="panel-title">💳 Betaling</div>
         <img id="payment-qr-img" src="" alt="Betaal QR code" />
         <p class="qr-hint">Scan om te betalen via Tikkie / PayConiq / iDEAL</p>
+        <a id="sidebar-payment-link" href="#" target="_blank" rel="noopener" class="btn-payment-link" style="display:none;">
+          🔗 Open betaallink
+        </a>
       </div>
 
     </div>
@@ -1338,14 +1680,26 @@
     <div class="modal-order-summary" id="modal-summary"></div>
     <p id="modal-total" style="font-weight:800;font-size:1.1rem;color:var(--accent);margin-bottom:4px;"></p>
 
-    <!-- Payment QR in modal -->
+    <!-- Payment QR / link buttons in modal -->
     <div class="modal-payment-qr" id="modal-payment-qr" style="display:none;">
-      <div class="qr-label">💳 Scan om te betalen</div>
-      <img id="modal-qr-img" src="" alt="Betaal QR code" />
-      <div class="qr-sub">Tikkie / PayConiq / iDEAL</div>
+      <button class="btn-open-qr" id="modal-qr-btn" onclick="openQROverlay()" style="display:none;">💳 Toon QR code om te betalen</button>
+      <a class="btn-payment-link" id="modal-pay-link" href="#" target="_blank" rel="noopener" style="display:none;">🔗 Open betaallink</a>
     </div>
 
     <button class="modal-close" onclick="closeModal()">Sluiten</button>
+  </div>
+</div>
+
+<!-- Fullscreen QR overlay -->
+<div class="qr-overlay" id="qr-overlay" onclick="closeQROverlay()">
+  <div class="qr-overlay-content" onclick="event.stopPropagation()">
+    <div class="qr-overlay-label">💳 Scan om te betalen</div>
+    <img id="qr-overlay-img" src="" alt="Betaal QR code" />
+    <div class="qr-overlay-sub">Tikkie / PayConiq / iDEAL</div>
+    <a id="qr-payment-link" href="#" target="_blank" rel="noopener" class="btn-payment-link" style="display:none;">
+      🔗 Open betaallink
+    </a>
+    <button class="modal-close" onclick="closeQROverlay()" style="margin-top:12px;">Sluiten</button>
   </div>
 </div>
 
@@ -1382,15 +1736,18 @@ function saveOrders(orders) {
 
 // ── Open datums (server-side) ────────────────────────────────────────────
 let _openDates = [];
+let _sentDates = [];
 
 async function loadOpenDates() {
   try {
     var resp = await fetch('/api/dates');
     var data = await resp.json();
     _openDates = data.openDates || [];
+    _sentDates = data.sentDates || [];
   } catch (e) {
     console.warn('Kon open datums niet laden van server:', e);
     _openDates = [];
+    _sentDates = [];
   }
 }
 
@@ -1398,8 +1755,17 @@ function isDateOpen(dateStr) {
   return _openDates.includes(dateStr);
 }
 
+function isDateSent(dateStr) {
+  return _sentDates.includes(dateStr);
+}
+
+function canOrder(dateStr) {
+  return isDateOpen(dateStr) && !isDateSent(dateStr);
+}
+
 // ── Server settings (QR + API key) ──────────────────────────────────────────
 let _cachedQR = null;
+let _cachedPaymentLink = null;
 let _cachedApiKey = '';
 
 async function loadServerSettings() {
@@ -1407,6 +1773,7 @@ async function loadServerSettings() {
     const resp = await fetch('/api/settings?key=qr');
     const qrData = await resp.json();
     _cachedQR = qrData.qr || null;
+    _cachedPaymentLink = qrData.paymentLink || null;
   } catch (e) {
     console.warn('Kon QR niet laden van server:', e);
   }
@@ -1421,6 +1788,10 @@ async function loadServerSettings() {
 
 function getPaymentQR() {
   return _cachedQR;
+}
+
+function getPaymentLink() {
+  return _cachedPaymentLink;
 }
 
 // ── Menu: laden vanuit localStorage (incl. opslag) ─────────────────────────
@@ -1552,11 +1923,16 @@ let activeFilter = 'all';
 function checkDateStatus() {
   var today = getTodayDate();
   var open = isDateOpen(today);
+  var sent = isDateSent(today);
   var banner = document.getElementById('closed-banner');
   var bannerText = document.getElementById('closed-banner-text');
   var submitBtn = document.getElementById('submit-btn');
 
-  if (!open) {
+  if (sent) {
+    banner.style.display = 'block';
+    bannerText.textContent = '🚚 De bestelling voor ' + today + ' is al doorgestuurd naar de snackbar — er kan niet meer besteld worden.';
+    submitBtn.disabled = true;
+  } else if (!open) {
     banner.style.display = 'block';
     bannerText.textContent = '🔒 Bestelling voor ' + today + ' is nog niet geopend — er kan nog niet besteld worden.';
     submitBtn.disabled = true;
@@ -1569,24 +1945,77 @@ function checkDateStatus() {
 // ── Payment QR ─────────────────────────────────────────────────────────────
 function showPaymentQR() {
   const qr = getPaymentQR();
+  const paymentLink = getPaymentLink();
+  const hasQR = !!qr;
+  const hasLink = !!paymentLink;
+
   // Sidebar panel
   const sidePanel = document.getElementById('payment-qr-panel');
   const sideImg = document.getElementById('payment-qr-img');
-  if (qr) {
-    sideImg.src = qr;
+  const sideLink = document.getElementById('sidebar-payment-link');
+  if (hasQR || hasLink) {
     sidePanel.style.display = 'block';
+    // QR image
+    if (hasQR) {
+      sideImg.src = qr;
+      sideImg.style.display = 'block';
+    } else {
+      sideImg.style.display = 'none';
+    }
+    // Payment link
+    if (hasLink) {
+      sideLink.href = paymentLink;
+      sideLink.style.display = 'inline-flex';
+    } else {
+      sideLink.style.display = 'none';
+    }
   } else {
     sidePanel.style.display = 'none';
   }
-  // Modal section
+
+  // Modal: show container if QR or payment link
   const modalQr = document.getElementById('modal-payment-qr');
-  const modalImg = document.getElementById('modal-qr-img');
-  if (qr) {
-    modalImg.src = qr;
+  const modalQrBtn = document.getElementById('modal-qr-btn');
+  const modalPayLink = document.getElementById('modal-pay-link');
+
+  if (hasQR || hasLink) {
     modalQr.style.display = 'block';
+
+    // QR button
+    if (hasQR) {
+      document.getElementById('qr-overlay-img').src = qr;
+      modalQrBtn.style.display = 'inline-flex';
+    } else {
+      modalQrBtn.style.display = 'none';
+    }
+
+    // Payment link button
+    if (hasLink) {
+      modalPayLink.href = paymentLink;
+      modalPayLink.style.display = 'inline-flex';
+    } else {
+      modalPayLink.style.display = 'none';
+    }
   } else {
     modalQr.style.display = 'none';
   }
+}
+
+function openQROverlay() {
+  // Show/hide payment link button
+  var linkEl = document.getElementById('qr-payment-link');
+  var paymentLink = getPaymentLink();
+  if (paymentLink) {
+    linkEl.href = paymentLink;
+    linkEl.style.display = 'inline-flex';
+  } else {
+    linkEl.style.display = 'none';
+  }
+  document.getElementById('qr-overlay').classList.add('open');
+}
+
+function closeQROverlay() {
+  document.getElementById('qr-overlay').classList.remove('open');
 }
 
 // ── Render menu ────────────────────────────────────────────────────────────
@@ -1598,7 +2027,7 @@ function applyFilters() {
   const q = document.getElementById('search').value.toLowerCase();
   const container = document.getElementById('menu-container');
   container.innerHTML = '';
-  const notOpenToday = !isDateOpen(getTodayDate());
+  const notOpenToday = !canOrder(getTodayDate());
 
   const cats = [...new Set(MENU.map(i => i.cat))];
   cats.forEach(cat => {
@@ -1624,7 +2053,8 @@ function applyFilters() {
 
       let actionHtml;
       if (notOpenToday) {
-        actionHtml = `<span style="font-size:.75rem;color:var(--red);font-weight:600;">Niet geopend</span>`;
+        var closedLabel = isDateSent(getTodayDate()) ? 'Doorgestuurd' : 'Niet geopend';
+        actionHtml = `<span style="font-size:.75rem;color:var(--red);font-weight:600;">${closedLabel}</span>`;
       } else if (qty === 0) {
         actionHtml = `<button class="add-btn" onclick="addItem(${item.nr})" title="Voeg toe">+</button>`;
       } else {
@@ -1658,13 +2088,13 @@ function setFilter(btn) {
 
 // ── Cart logic ─────────────────────────────────────────────────────────────
 function addItem(nr) {
-  if (!isDateOpen(getTodayDate())) return;
+  if (!canOrder(getTodayDate())) return;
   cart[nr] = (cart[nr] || 0) + 1;
   updateAll();
 }
 
 function changeQty(nr, delta) {
-  if (!isDateOpen(getTodayDate())) return;
+  if (!canOrder(getTodayDate())) return;
   cart[nr] = (cart[nr] || 0) + delta;
   if (cart[nr] <= 0) delete cart[nr];
   updateAll();
@@ -1694,8 +2124,8 @@ function updateAll() {
   const count = cartCount();
   document.getElementById('header-badge').textContent = count;
   document.getElementById('fab-badge').textContent = count + ' item' + (count !== 1 ? 's' : '');
-  // Only enable submit if date is open and cart has items
-  if (isDateOpen(getTodayDate())) {
+  // Only enable submit if date is open, not sent, and cart has items
+  if (canOrder(getTodayDate())) {
     document.getElementById('submit-btn').disabled = count === 0;
   }
 }
@@ -1741,9 +2171,13 @@ function renderCart() {
 }
 
 // ── Order submit ───────────────────────────────────────────────────────────
-function submitOrder() {
+async function submitOrder() {
   const today = getTodayDate();
 
+  if (isDateSent(today)) {
+    alert('De bestelling voor ' + today + ' is al doorgestuurd naar de snackbar.');
+    return;
+  }
   if (!isDateOpen(today)) {
     alert('Bestelling voor ' + today + ' is nog niet geopend.');
     return;
@@ -1770,7 +2204,7 @@ function submitOrder() {
 
   const total = sub + fooi;
 
-  // Persist order to localStorage
+  // Build order object
   const order = {
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     timestamp: Date.now(),
@@ -1781,9 +2215,22 @@ function submitOrder() {
     fooi,
     total,
   };
+
+  // Save to localStorage (backup)
   const orders = getOrders();
   orders.push(order);
   saveOrders(orders);
+
+  // Save to server database
+  try {
+    await fetch('/api/orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ order: order }),
+    });
+  } catch (e) {
+    console.warn('Kon bestelling niet naar server sturen:', e);
+  }
 
   // Build modal summary
   let summary = `<strong>Naam:</strong> ${escapeHtml(name)}<br>`;
@@ -1828,22 +2275,86 @@ function parseDate(s) {
 
 let overviewActiveTab = null;
 
-function deleteMyOrder(orderId) {
-  // Find the order and check if date is still open
-  const orders = getOrders();
-  const order = orders.find(o => o.id === orderId);
-  if (!order) { renderOverview(); return; }
+async function loadServerOrders() {
+  // Load orders from server for all known open/sent dates
+  var allOrders = [];
+  var datesToLoad = [...new Set([..._openDates, ..._sentDates])];
+
+  // Also check localStorage for dates that might have local orders
+  var localOrders = getOrders();
+  localOrders.forEach(function(o) {
+    if (o.date && !datesToLoad.includes(o.date)) {
+      datesToLoad.push(o.date);
+    }
+  });
+
+  if (datesToLoad.length === 0) return allOrders;
+
+  try {
+    var fetches = datesToLoad.map(function(d) {
+      return fetch('/api/orders?date=' + encodeURIComponent(d))
+        .then(function(r) { return r.json(); })
+        .then(function(data) { return data.orders || []; })
+        .catch(function() { return []; });
+    });
+    var results = await Promise.all(fetches);
+    results.forEach(function(orders) {
+      allOrders = allOrders.concat(orders);
+    });
+  } catch (e) {
+    console.warn('Kon server bestellingen niet laden:', e);
+    // Fallback to localStorage
+    return localOrders;
+  }
+
+  return allOrders;
+}
+
+async function deleteMyOrder(orderId) {
+  // Find the order (try server orders first, then localStorage)
+  var orders = _cachedOrders || getOrders();
+  var order = orders.find(function(o) { return o.id === orderId; });
+  if (!order) { await renderOverview(); return; }
+  if (isDateSent(order.date)) {
+    alert('Deze bestelling kan niet meer verwijderd worden — de bestelling is al doorgestuurd naar de snackbar.');
+    return;
+  }
   if (!isDateOpen(order.date)) {
     alert('Deze bestelling kan niet meer verwijderd worden — de datum is niet meer geopend.');
     return;
   }
   if (!confirm('Weet je zeker dat je jouw bestelling wilt verwijderen?')) return;
-  saveOrders(orders.filter(o => o.id !== orderId));
-  renderOverview();
+
+  // Delete from server
+  try {
+    await fetch('/api/orders?date=' + encodeURIComponent(order.date) + '&id=' + encodeURIComponent(orderId), {
+      method: 'DELETE',
+    });
+  } catch (e) {
+    console.warn('Kon bestelling niet verwijderen op server:', e);
+  }
+
+  // Also delete from localStorage
+  saveOrders(getOrders().filter(function(o) { return o.id !== orderId; }));
+  await renderOverview();
 }
 
-function renderOverview() {
-  const orders = getOrders();
+var _cachedOrders = null;
+
+async function renderOverview() {
+  // Load orders from server
+  var serverOrders = await loadServerOrders();
+  // Merge with localStorage orders (avoid duplicates by id)
+  var localOrders = getOrders();
+  var seenIds = {};
+  var orders = [];
+  serverOrders.forEach(function(o) {
+    if (!seenIds[o.id]) { seenIds[o.id] = true; orders.push(o); }
+  });
+  localOrders.forEach(function(o) {
+    if (!seenIds[o.id]) { seenIds[o.id] = true; orders.push(o); }
+  });
+  _cachedOrders = orders;
   const tabBar = document.getElementById('overview-tab-bar');
   const panels = document.getElementById('overview-panels');
 
@@ -1870,9 +2381,10 @@ function renderOverview() {
   tabBar.innerHTML = '';
   sortedDates.forEach(date => {
     const dateIsOpen = isDateOpen(date);
+    const dateIsSent = isDateSent(date);
     const btn = document.createElement('button');
     btn.className = 'overview-tab-btn' + (date === overviewActiveTab ? ' active' : '');
-    btn.textContent = date + (dateIsOpen ? '' : ' 🔒');
+    btn.textContent = date + (dateIsSent ? ' 🚚' : (dateIsOpen ? '' : ' 🔒'));
     btn.onclick = () => { overviewActiveTab = date; renderOverview(); };
     tabBar.appendChild(btn);
   });
@@ -1881,6 +2393,7 @@ function renderOverview() {
   panels.innerHTML = '';
   const dateOrders = grouped[overviewActiveTab] || [];
   const activeIsOpen = isDateOpen(overviewActiveTab);
+  const activeIsSent = isDateSent(overviewActiveTab);
 
   const panel = document.createElement('div');
   panel.className = 'overview-body';
@@ -1909,9 +2422,11 @@ function renderOverview() {
         <div class="ov-row-right">
           <span class="ov-total">${fmt(order.total)}</span>
           <span class="ov-time">${time}</span>
-          ${activeIsOpen
-            ? '<button class="ov-delete-btn" onclick="deleteMyOrder(\'' + order.id + '\')">🗑 Verwijderen</button>'
-            : '<span class="ov-closed-tag">🔒 Gesloten</span>'
+          ${activeIsSent
+            ? '<span class="ov-closed-tag">🚚 Doorgestuurd</span>'
+            : (activeIsOpen
+              ? '<button class="ov-delete-btn" onclick="deleteMyOrder(\'' + order.id + '\')">🗑 Verwijderen</button>'
+              : '<span class="ov-closed-tag">🔒 Gesloten</span>')
           }
         </div>`;
       panel.appendChild(row);
@@ -1932,14 +2447,26 @@ let chatStreaming = false;
 
 // ── Chat open/sluit ────────────────────────────────────────────────────────
 
+var _chatScrollY = 0;
 function toggleChat() {
   chatOpen = !chatOpen;
-  document.getElementById('chat-panel').classList.toggle('open', chatOpen);
+  var panel = document.getElementById('chat-panel');
+  panel.classList.toggle('open', chatOpen);
   document.getElementById('chat-overlay').classList.toggle('open', chatOpen);
   const fab = document.getElementById('chat-fab');
   if (chatOpen) {
     fab.style.transform = 'scale(0.9)';
     fab.style.opacity = '0.7';
+    // Prevent background scrolling on iOS
+    _chatScrollY = window.scrollY;
+    document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.width = '100%';
+    document.body.style.top = '-' + _chatScrollY + 'px';
+    // Reset panel position (in case keyboard handler changed it)
+    panel.style.height = '';
+    panel.style.top = '0';
+    panel.style.bottom = '0';
     const inp = document.getElementById('chat-input');
     if (inp && document.getElementById('chat-input-bar').style.display !== 'none') {
       setTimeout(() => inp.focus(), 350);
@@ -1947,8 +2474,47 @@ function toggleChat() {
   } else {
     fab.style.transform = '';
     fab.style.opacity = '';
+    // Reset panel position
+    panel.style.height = '';
+    panel.style.top = '0';
+    panel.style.bottom = '0';
+    // Restore background scrolling
+    document.body.style.overflow = '';
+    document.body.style.position = '';
+    document.body.style.width = '';
+    document.body.style.top = '';
+    window.scrollTo(0, _chatScrollY);
   }
 }
+
+// ── iOS keyboard fix: reposition chat panel when virtual keyboard opens ──
+(function() {
+  if (!window.visualViewport) return;
+  var panel = null;
+
+  function adjustForKeyboard() {
+    if (!panel) panel = document.getElementById('chat-panel');
+    if (!panel || !panel.classList.contains('open')) return;
+
+    var vv = window.visualViewport;
+    var keyboardHeight = window.innerHeight - vv.height;
+
+    if (keyboardHeight > 100) {
+      // Keyboard is open — shrink panel to visible area
+      panel.style.bottom = 'auto';
+      panel.style.height = vv.height + 'px';
+      panel.style.top = vv.offsetTop + 'px';
+    } else {
+      // Keyboard is closed — restore to full viewport
+      panel.style.height = '';
+      panel.style.top = '0';
+      panel.style.bottom = '0';
+    }
+  }
+
+  window.visualViewport.addEventListener('resize', adjustForKeyboard);
+  window.visualViewport.addEventListener('scroll', adjustForKeyboard);
+})();
 
 // ── API key ────────────────────────────────────────────────────────────────
 
@@ -2164,23 +2730,17 @@ function executeChatTool(name, input) {
 // ── Claude API call with streaming + tool use ──────────────────────────────
 
 async function callClaude(messages) {
-  const apiKey = getApiKey();
-
-  const response = await fetch(ANTHROPIC_API_URL, {
+  const response = await fetch('/api/chat', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
     },
     body: JSON.stringify({
       model: CHAT_MODEL,
       max_tokens: 1024,
       system: buildChatSystemPrompt(),
       tools: buildChatTools(),
-      messages,
-      stream: true,
+      messages: messages,
     }),
   });
 
@@ -2397,5 +2957,6 @@ _applyTheme(localStorage.getItem('snack_theme') || 'dark');
   renderOverview();
 })();
 </script>
+<script>if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js');}</script>
 </body>
 </html>

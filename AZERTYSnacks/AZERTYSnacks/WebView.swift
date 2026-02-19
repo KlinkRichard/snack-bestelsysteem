@@ -21,9 +21,6 @@ struct WebView: UIViewRepresentable {
         prefs.allowsContentJavaScript = true
         config.defaultWebpagePreferences = prefs
 
-        // Allow fetch/XHR cross-origin requests (needed for /api/ calls & Anthropic)
-        config.preferences.setValue(true, forKey: "allowFileAccessFromFileURLs")
-
         let webView = WKWebView(frame: .zero, configuration: config)
         webView.navigationDelegate = context.coordinator
         webView.uiDelegate = context.coordinator
@@ -39,7 +36,7 @@ struct WebView: UIViewRepresentable {
         webView.scrollView.minimumZoomScale = 1.0
 
         // Custom User-Agent so the website knows it's the native app
-        webView.customUserAgent = "AZERTYSnacks-iOS/1.0 " + (webView.value(forKey: "_userAgent") as? String ?? "")
+        webView.customUserAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) AZERTYSnacks-iOS/1.0"
 
         // Pull to refresh
         let refreshControl = UIRefreshControl()
@@ -131,15 +128,6 @@ struct WebView: UIViewRepresentable {
             })();
             """
             webView.evaluateJavaScript(js)
-        }
-
-        // Handle SSL errors - allow our known domains
-        func webView(_ webView: WKWebView, didReceive challenge: URLAuthenticationChallenge, completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
-            if let trust = challenge.protectionSpace.serverTrust {
-                completionHandler(.useCredential, URLCredential(trust: trust))
-            } else {
-                completionHandler(.performDefaultHandling, nil)
-            }
         }
 
         // MARK: - UI Delegate

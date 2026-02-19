@@ -25,6 +25,12 @@ jobs:
           sudo xcode-select -s "$XCODE_PATH/Contents/Developer"
           xcodebuild -version
 
+      - name: Generate app icon
+        working-directory: AZERTYSnacks
+        run: |
+          swift generate-icon.swift AZERTYSnacks/Assets.xcassets/AppIcon.appiconset/appicon-1024.png
+          ls -la AZERTYSnacks/Assets.xcassets/AppIcon.appiconset/
+
       - name: Build for device (unsigned)
         working-directory: AZERTYSnacks
         run: |
