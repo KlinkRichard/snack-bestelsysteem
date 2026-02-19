@@ -1,11 +1,6 @@
 {
   "version": 2,
   "name": "snack-bestelsysteem",
-  "functions": {
-    "api/**/*.js": {
-      "runtime": "@vercel/node@3"
-    }
-  },
   "headers": [
     {
       "source": "/(.*)",
